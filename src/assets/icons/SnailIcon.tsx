@@ -1,7 +1,8 @@
-import { type IconProps } from '@/assets';
+import type { IconProps } from "@/assets";
 
 export function SnailIcon(props: IconProps = {}) {
 	return (
+		// biome-ignore lint/a11y/noSvgWithoutTitle: <explanation>
 		<svg
 			fill="none"
 			xmlns="http://www.w3.org/2000/svg"
@@ -20,12 +21,12 @@ export function SnailIcon(props: IconProps = {}) {
 				<path
 					stroke="currentColor"
 					d="M2 13a6 6 0 1 0 12 0a4 4 0 1 0-8 0a2 2 0 0 0 4 0"
-				></path>
-				<circle cx="10" cy="13" r="8"></circle>
+				/>
+				<circle cx="10" cy="13" r="8" />
 				<path
 					stroke="currentColor"
 					d="M2 21h12c4.4 0 8-3.6 8-8V7a2 2 0 1 0-4 0v6m0-10l1.1 2.2M22 3l-1.1 2.2"
-				></path>
+				/>
 			</g>
 		</svg>
 	);

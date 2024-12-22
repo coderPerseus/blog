@@ -1,11 +1,11 @@
 // 'use client';
-import { useEffect } from 'react';
-import { flushSync } from 'react-dom';
+import { useEffect } from "react";
+import { flushSync } from "react-dom";
 
 export default function useThemeToggleAnimation({
 	isDarkMode,
 	domRef,
-	onThemeChange
+	onThemeChange,
 }: {
 	domRef: React.RefObject<HTMLElement>;
 	isDarkMode: boolean;
@@ -16,27 +16,27 @@ export default function useThemeToggleAnimation({
 		// @ts-ignore
 		await document.startViewTransition(() => {
 			flushSync(() => {
-				onThemeChange(isDarkMode ? 'light' : 'dark');
+				onThemeChange(isDarkMode ? "light" : "dark");
 			});
 		}).ready;
 
 		document.documentElement.animate(
 			{
-				opacity: [0, 1]
+				opacity: [0, 1],
 			},
 			{
 				duration: 500,
-				easing: 'ease-in-out',
-				pseudoElement: '::view-transition-new(root)'
-			}
+				easing: "ease-in-out",
+				pseudoElement: "::view-transition-new(root)",
+			},
 		);
 	};
 
 	useEffect(() => {
 		if (isDarkMode) {
-			document.documentElement.classList.add('dark');
+			document.documentElement.classList.add("dark");
 		} else {
-			document.documentElement.classList.remove('dark');
+			document.documentElement.classList.remove("dark");
 		}
 	}, [isDarkMode]);
 	return { toggleDarkMode };

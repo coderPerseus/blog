@@ -1,33 +1,33 @@
-import { cn } from '@/lib/utils';
-import React from 'react';
+import { cn } from "@/lib/utils";
+import React from "react";
 
-type ContainerProps = React.ComponentPropsWithoutRef<'div'>;
+type ContainerProps = React.ComponentPropsWithoutRef<"div">;
 
 const OuterContainer = React.forwardRef<HTMLDivElement, ContainerProps>(
 	function OuterContainer({ className, children, ...props }, ref) {
 		return (
-			<div ref={ref} className={cn('sm:px-8', className)} {...props}>
+			<div ref={ref} className={cn("sm:px-8", className)} {...props}>
 				<div className="mx-auto max-w-7xl lg:px-8">{children}</div>
 			</div>
 		);
-	}
+	},
 );
 
 const InnerContainer = React.forwardRef<HTMLDivElement, ContainerProps>(
 	function InnerContainer(
 		{ className, children, ...props }: ContainerProps,
-		ref
+		ref,
 	) {
 		return (
 			<div
 				ref={ref}
-				className={cn('relative px-4 sm:px-8 lg:px-12', className)}
+				className={cn("relative px-4 sm:px-8 lg:px-12", className)}
 				{...props}
 			>
 				<div className="mx-auto max-w-2xl lg:max-w-5xl">{children}</div>
 			</div>
 		);
-	}
+	},
 );
 
 const ContainerComponent = React.forwardRef<HTMLDivElement, ContainerProps>(
@@ -37,12 +37,12 @@ const ContainerComponent = React.forwardRef<HTMLDivElement, ContainerProps>(
 				<InnerContainer>{children}</InnerContainer>
 			</OuterContainer>
 		);
-	}
+	},
 );
 /**
  * 基础布局组件
  */
 export const Container = Object.assign(ContainerComponent, {
 	Outer: OuterContainer,
-	Inner: InnerContainer
+	Inner: InnerContainer,
 });

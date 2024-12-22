@@ -1,60 +1,57 @@
-import codeCopyIcon from '@/assets/products/codecopy.png';
-import resumeIcon from '@/assets/products/resume.png';
-import React from 'react';
-import luckySnailBlogIcon from '~/public/logo.png';
-import npmIcon from '~/public/npmIcon.webp';
-import { ProjectCard } from './ProjectCard';
+import codeCopyIcon from "@/assets/products/codecopy.png";
+import resumeIcon from "@/assets/products/resume.png";
+import type React from "react";
+import luckySnailBlogIcon from "~/public/logo.png";
+import npmIcon from "~/public/npmIcon.webp";
+import { ProjectCard } from "./ProjectCard";
 
 export function Projects(): React.ReactElement {
 	const projects: ProjectItem[] = [
 		{
-			id: '4',
-			url: 'https://ascii.luckysnail.cn/',
+			id: "4",
+			url: "https://ascii.luckysnail.cn/",
 			icon: luckySnailBlogIcon,
-			name: 'ASCII 字符生成器',
-			description: '把图片和视频转为 ASCII 形式',
-			tags: ['个人']
+			name: "ASCII 字符生成器",
+			description: "把图片和视频转为 ASCII 形式",
+			tags: ["个人"],
 		},
 		{
-			id: '4',
-			url: 'https://www.npmjs.com/package/bytemd-plugin-image-lazy',
+			id: "4",
+			url: "https://www.npmjs.com/package/bytemd-plugin-image-lazy",
 			icon: npmIcon,
-			name: 'bytemd 的图片懒加载插件',
-			description: '支持原生懒加载和 intersection observer 懒加载',
-			tags: ['个人']
+			name: "bytemd 的图片懒加载插件",
+			description: "支持原生懒加载和 intersection observer 懒加载",
+			tags: ["个人"],
 		},
 		{
-			id: '3',
-			url: 'https://www.luckySnail.cn',
+			id: "3",
+			url: "https://www.luckySnail.cn",
 			icon: luckySnailBlogIcon,
-			name: 'luckySnail 的个人博客',
-			description: '基于 Next.js 创建的博客网站，',
-			tags: ['个人']
+			name: "luckySnail 的个人博客",
+			description: "基于 Next.js 创建的博客网站，",
+			tags: ["个人"],
 		},
 		{
-			id: '2',
-			url: 'https://www.laoyujianli.com',
+			id: "2",
+			url: "https://www.laoyujianli.com",
 			icon: resumeIcon,
-			name: '老鱼简历',
+			name: "老鱼简历",
 			description:
-				'很好用的写简历平台，能够下载 PDF PNG格式的简历，当然也可以分享在线简历链接，支持各种格式文件导入简历，接入了 AI 帮忙快速写简历，还能看到一些实时的求职动态。可以体验一下，如果使用有任何问题，欢迎 联系我',
-			tags: ['公司']
+				"很好用的写简历平台，能够下载 PDF PNG格式的简历，当然也可以分享在线简历链接，支持各种格式文件导入简历，接入了 AI 帮忙快速写简历，还能看到一些实时的求职动态。可以体验一下，如果使用有任何问题，欢迎 联系我",
+			tags: ["公司"],
 		},
 		{
-			id: '1',
-			url: 'https://www.codecopy.cn',
+			id: "1",
+			url: "https://www.codecopy.cn",
 			icon: codeCopyIcon,
-			name: '代码小抄',
-			description: '一个方便的代码片段记录工具',
-			tags: ['公司']
-		}
+			name: "代码小抄",
+			description: "一个方便的代码片段记录工具",
+			tags: ["公司"],
+		},
 	];
 
 	return (
-		<ul
-			role="list"
-			className="grid grid-cols-1 gap-x-12 gap-y-16 sm:grid-cols-2 lg:grid-cols-3"
-		>
+		<ul className="grid grid-cols-1 gap-x-12 gap-y-16 sm:grid-cols-2 lg:grid-cols-3">
 			{projects.map((project) => (
 				<ProjectCard project={project} key={project.id} />
 			))}

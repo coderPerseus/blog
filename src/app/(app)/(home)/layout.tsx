@@ -1,5 +1,5 @@
 export default function RootLayout({
-	children
+	children,
 }: Readonly<{
 	children: React.ReactNode;
 }>) {

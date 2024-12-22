@@ -1,5 +1,5 @@
-'use client';
-import { memo, type FC } from 'react';
+"use client";
+import { type FC, memo } from "react";
 
 const CoverSwitch: FC = () => {
 	// const searchParams = useSearchParams();

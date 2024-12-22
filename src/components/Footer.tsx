@@ -1,14 +1,14 @@
-import { PeekabooLink } from '@/components/links/PeekabooLink';
-import siteMetadata from '@/config/site';
-import Image from 'next/image';
-import Link from 'next/link';
-import React from 'react';
-import { Container } from './Container';
+import { PeekabooLink } from "@/components/links/PeekabooLink";
+import siteMetadata from "@/config/site";
+import Image from "next/image";
+import Link from "next/link";
+import type React from "react";
+import { Container } from "./Container";
 
 const navigationItems = siteMetadata.navigationItems;
 function NavLink({
 	href,
-	children
+	children,
 }: {
 	href: string;
 	children: React.ReactNode;
@@ -67,7 +67,7 @@ export function Footer() {
 					>
 						<Image
 							unoptimized
-							src={'/police.png'}
+							src={"/police.png"}
 							width={18}
 							height={18}
 							alt="备案"

@@ -1,23 +1,23 @@
-'use client';
+"use client";
 
-import { AnimatePresence, motion } from 'framer-motion';
-import Image from 'next/image';
-import Link, { type LinkProps } from 'next/link';
-import React from 'react';
+import { AnimatePresence, motion } from "framer-motion";
+import Image from "next/image";
+import Link, { type LinkProps } from "next/link";
+import React from "react";
 
-import { RichLink } from '@/components/links/RichLink';
+import { RichLink } from "@/components/links/RichLink";
 import {
 	HoverCard,
 	HoverCardContent,
 	HoverCardPortal,
-	HoverCardTrigger
-} from '@/components/ui/hover-card';
-import { makeBlurDataURL } from '@/lib/images';
-import { cn } from '@/lib/utils';
-import { env } from '~/env.mjs';
+	HoverCardTrigger,
+} from "@/components/ui/hover-card";
+import { makeBlurDataURL } from "@/lib/images";
+import { cn } from "@/lib/utils";
+import { env } from "~/env.mjs";
 
 type PeekabooLinkProps = LinkProps &
-	React.ComponentPropsWithoutRef<'a'> & {
+	React.ComponentPropsWithoutRef<"a"> & {
 		children: React.ReactNode;
 	};
 export function PeekabooLink({
@@ -29,7 +29,7 @@ export function PeekabooLink({
 	const [isOpen, setIsOpen] = React.useState(false);
 
 	// if it's a relative link, use a fallback Link
-	if (!href.startsWith('http')) {
+	if (!href.startsWith("http")) {
 		return (
 			<Link href={href} className={cn(className)} {...props}>
 				{children}
@@ -42,8 +42,8 @@ export function PeekabooLink({
 			<RichLink
 				href={href}
 				className={cn(
-					'font-semibold text-zinc-800 hover:underline dark:text-zinc-100',
-					className
+					"font-semibold text-zinc-800 hover:underline dark:text-zinc-100",
+					className,
 				)}
 				target="_blank"
 				{...props}
@@ -63,8 +63,8 @@ export function PeekabooLink({
 				<RichLink
 					href={href}
 					className={cn(
-						'font-semibold text-zinc-800 hover:underline dark:text-zinc-100',
-						className
+						"font-semibold text-zinc-800 hover:underline dark:text-zinc-100",
+						className,
 					)}
 					target="_blank"
 					{...props}
@@ -82,22 +82,22 @@ export function PeekabooLink({
 									opacity: 0,
 									scale: 0.965,
 									y: 9,
-									height: 0
+									height: 0,
 								}}
 								animate={{
 									opacity: 1,
 									scale: 1,
 									y: 0,
-									height: 250
+									height: 250,
 								}}
 								exit={{
 									opacity: 0,
 									scale: 0.98,
 									y: 8,
-									height: 0
+									height: 0,
 								}}
 								transition={{
-									duration: 0.2
+									duration: 0.2,
 								}}
 							>
 								<Image

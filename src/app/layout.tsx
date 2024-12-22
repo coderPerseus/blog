@@ -1,42 +1,42 @@
-import BaiDuAnalytics from '@/components/BaiDuAnalytics';
-import GoogleAnalytics from '@/components/GoogleAnalytics';
-import siteMetadata from '@/config/site';
-import { constructSiteUrl } from '@/lib';
-import { sansFont } from '@/lib/font';
-import { Viewport, type Metadata } from 'next';
-import { ThemeProvider } from 'next-themes';
-import { Inter } from 'next/font/google';
-import './globals.css';
+import BaiDuAnalytics from "@/components/BaiDuAnalytics";
+import GoogleAnalytics from "@/components/GoogleAnalytics";
+import siteMetadata from "@/config/site";
+import { constructSiteUrl } from "@/lib";
+import { sansFont } from "@/lib/font";
+import type { Metadata, Viewport } from "next";
+import { ThemeProvider } from "next-themes";
+import { Inter } from "next/font/google";
+import "./globals.css";
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
 	metadataBase: new URL(siteMetadata.url),
 	title: {
-		template: '%s | ' + siteMetadata.authors,
-		default: siteMetadata.authorsCN
+		template: `%s | ${siteMetadata.authors}`,
+		default: siteMetadata.authorsCN,
 	},
 	description: siteMetadata.description,
-	keywords: '%s,' + siteMetadata.keywords.join(','),
-	manifest: '/site.webmanifest',
+	keywords: `%s,${siteMetadata.keywords.join(",")}`,
+	manifest: "/site.webmanifest",
 	openGraph: siteMetadata.openGraph,
 	twitter: siteMetadata.twitter,
 	alternates: {
-		canonical: constructSiteUrl('/'),
+		canonical: constructSiteUrl("/"),
 		types: {
-			'application/rss+xml': [{ url: 'rss', title: 'RSS 订阅' }]
-		}
+			"application/rss+xml": [{ url: "rss", title: "RSS 订阅" }],
+		},
 	},
 	other: {
-		'baidu-site-verification': 'codeva-7AmpPWgzQY',
-		'google-site-verification': 'TTbfOvWmLj0icfk0BQNUZB3crwReji82Q_vRdnZFFAc'
-	}
+		"baidu-site-verification": "codeva-7AmpPWgzQY",
+		"google-site-verification": "TTbfOvWmLj0icfk0BQNUZB3crwReji82Q_vRdnZFFAc",
+	},
 };
 export const viewport: Viewport = {
-	themeColor: siteMetadata.themeColors
+	themeColor: siteMetadata.themeColors,
 };
 export default function RootLayout({
-	children
+	children,
 }: Readonly<{
 	children: React.ReactNode;
 }>) {
@@ -65,4 +65,4 @@ export default function RootLayout({
 	);
 }
 
-export const dynamic = 'error';
+export const dynamic = "error";

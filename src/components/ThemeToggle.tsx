@@ -1,12 +1,12 @@
-'use client';
-import { Switch } from '@/components/ui/switch';
-import 'client-only';
-import { motion } from 'framer-motion';
-import { Moon, Sun } from 'lucide-react';
-import { useTheme } from 'next-themes';
-import { useEffect, useRef, useState } from 'react';
-import useThemeToggleAnimation from '../hooks/useThemeToggleAnimation';
-import { Toaster } from './ui/sonner';
+"use client";
+import { Switch } from "@/components/ui/switch";
+import "client-only";
+import { motion } from "framer-motion";
+import { Moon, Sun } from "lucide-react";
+import { useTheme } from "next-themes";
+import { useEffect, useRef, useState } from "react";
+import useThemeToggleAnimation from "../hooks/useThemeToggleAnimation";
+import { Toaster } from "./ui/sonner";
 
 export default function ThemeToggle() {
 	const eventRef = useRef<AnyIfEmpty>(null);
@@ -15,18 +15,18 @@ export default function ThemeToggle() {
 	const toggleRef = useRef<AnyIfEmpty>(null);
 	const { toggleDarkMode } = useThemeToggleAnimation({
 		domRef: toggleRef,
-		isDarkMode: theme === 'dark',
+		isDarkMode: theme === "dark",
 		onThemeChange: (t) => {
 			setTheme(t);
-		}
+		},
 	});
 	useEffect(() => {
-		const link = document.createElement('link');
-		link.rel = 'stylesheet';
+		const link = document.createElement("link");
+		link.rel = "stylesheet";
 		link.href =
-			theme === 'dark'
-				? '/style/prism-gruvbox-light.css'
-				: '/style/prism-coldark-dark.css';
+			theme === "dark"
+				? "/style/prism-gruvbox-light.css"
+				: "/style/prism-coldark-dark.css";
 		document.head.appendChild(link);
 
 		// 清理函数，在组件卸载或主题变化时移除之前的 CSS
@@ -64,8 +64,9 @@ export default function ThemeToggle() {
 			<Switch
 				ref={toggleRef}
 				id="theme-toggle"
+				// biome-ignore lint/suspicious/noAssignInExpressions: <explanation>
 				onClick={(event) => (eventRef.current = event)}
-				checked={theme === 'dark'}
+				checked={theme === "dark"}
 				onCheckedChange={handleThemeChange}
 				className="w-16 h-8 px-1"
 			>
@@ -76,20 +77,20 @@ export default function ThemeToggle() {
 					layout
 					transition={spring}
 				>
-					{theme === 'dark' ? (
+					{theme === "dark" ? (
 						<Moon className="h-5 w-5 ml-[2px] text-violet-400" />
 					) : (
 						<Sun className="h-5 w-5 text-violet-500" />
 					)}
 				</motion.div>
 			</Switch>
-			<Toaster theme={theme ?? 'light'} richColors />
+			<Toaster theme={theme ?? "light"} richColors />
 		</div>
 	);
 }
 
 const spring = {
-	type: 'spring',
+	type: "spring",
 	stiffness: 900,
-	damping: 80
+	damping: 80,
 };

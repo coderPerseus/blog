@@ -1,5 +1,5 @@
-'use client';
-import Script from 'next/script';
+"use client";
+import Script from "next/script";
 const GoogleAnalytics = () => {
 	return (
 		<>
@@ -10,6 +10,7 @@ const GoogleAnalytics = () => {
 			<Script
 				id="gtag-init"
 				strategy="afterInteractive"
+				// biome-ignore lint/security/noDangerouslySetInnerHtml: <explanation>
 				dangerouslySetInnerHTML={{
 					__html: `
             window.dataLayer = window.dataLayer || [];
@@ -18,7 +19,7 @@ const GoogleAnalytics = () => {
             gtag('config', '${process.env.NEXT_PUBLIC_GOOGLE_ID}', {
             page_path: window.location.pathname,
             });
-          `
+          `,
 				}}
 			/>
 		</>

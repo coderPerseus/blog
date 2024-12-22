@@ -1,6 +1,6 @@
-import { constructSiteUrl } from '@/lib';
-import { allPosts } from 'contentlayer/generated';
-import { type MetadataRoute } from 'next';
+import { constructSiteUrl } from "@/lib";
+import { allPosts } from "contentlayer/generated";
+import type { MetadataRoute } from "next";
 
 export function generateStaticParams() {
 	return [{ __metadata_id__: [] }];
@@ -8,21 +8,21 @@ export function generateStaticParams() {
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 	const staticMap = [
 		{
-			url: constructSiteUrl('/').href,
-			lastModified: new Date()
+			url: constructSiteUrl("/").href,
+			lastModified: new Date(),
 		},
 		{
-			url: constructSiteUrl('/posts').href,
-			lastModified: new Date()
+			url: constructSiteUrl("/posts").href,
+			lastModified: new Date(),
 		},
 		{
-			url: constructSiteUrl('/projects').href,
-			lastModified: new Date()
+			url: constructSiteUrl("/projects").href,
+			lastModified: new Date(),
 		},
 		{
-			url: constructSiteUrl('/about').href,
-			lastModified: new Date()
-		}
+			url: constructSiteUrl("/about").href,
+			lastModified: new Date(),
+		},
 	] satisfies MetadataRoute.Sitemap;
 
 	const slugs = allPosts
@@ -33,7 +33,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
 	const dynamicMap = slugs.map((slug) => ({
 		url: constructSiteUrl(`/posts/${slug.slug}`).href,
-		lastModified: new Date()
+		lastModified: new Date(),
 	})) satisfies MetadataRoute.Sitemap;
 
 	return [...staticMap, ...dynamicMap];

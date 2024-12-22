@@ -1,13 +1,13 @@
-import { Container } from '@/components/Container';
-import { AspectRatio } from '@/components/ui/aspect-ratio';
-import { Separator } from '@/components/ui/separator';
-import { cn } from '@/lib/utils';
-import { allPosts, type Post } from 'contentlayer/generated';
-import dayjs from 'dayjs';
-import Image from 'next/image';
-import Link from 'next/link';
-import CoverSwitch from './CoverSwitch';
-import { Tag } from './TagItem';
+import { Container } from "@/components/Container";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
+import { type Post, allPosts } from "contentlayer/generated";
+import dayjs from "dayjs";
+import Image from "next/image";
+import Link from "next/link";
+import CoverSwitch from "./CoverSwitch";
+import { Tag } from "./TagItem";
 
 export interface PostItem {
 	title: string;
@@ -25,8 +25,8 @@ function PostCard({ post, showCover }: { post: Post; showCover?: boolean }) {
 		<Link
 			href={`/posts/${post.slug}`}
 			className={cn(
-				'text-violet-500 relative dark:text-violet-400',
-				showCover ? 'hover:drop-shadow-2xl' : ' hover:text-violet-700'
+				"text-violet-500 relative dark:text-violet-400",
+				showCover ? "hover:drop-shadow-2xl" : " hover:text-violet-700",
 			)}
 		>
 			{showCover && (
@@ -36,7 +36,7 @@ function PostCard({ post, showCover }: { post: Post; showCover?: boolean }) {
 				>
 					<Image
 						unoptimized
-						src={post.cover ?? ''}
+						src={post.cover ?? ""}
 						alt={post.title}
 						fill
 						className=" object-cover"
@@ -49,7 +49,7 @@ function PostCard({ post, showCover }: { post: Post; showCover?: boolean }) {
 				</h2>
 				<div className="hidden sm:flex flex-wrap mt-2 justify-start  items-center space-x-4 text-sm">
 					<time dateTime={post.date} className=" block text-xs text-gray-600">
-						{dayjs(post.date).format('YYYY-MM-DD')}
+						{dayjs(post.date).format("YYYY-MM-DD")}
 					</time>
 					<Separator orientation="vertical" className="h-5" />
 					{post.tags.map((tag) => (
@@ -60,21 +60,21 @@ function PostCard({ post, showCover }: { post: Post; showCover?: boolean }) {
 		</Link>
 	);
 }
-const title = '我的博客列表 | ';
+const title = "我的博客列表 | ";
 const description =
-	'记录在编程学习、工作中遇到的问题。我精心整理为技术博客文章合集，涵盖前端开发、React、Next.js等热门话题。发现实用的开发技巧、最佳实践和行业动态，提升您的开发技能。立即浏览最新文章！';
+	"记录在编程学习、工作中遇到的问题。我精心整理为技术博客文章合集，涵盖前端开发、React、Next.js等热门话题。发现实用的开发技巧、最佳实践和行业动态，提升您的开发技能。立即浏览最新文章！";
 export const metadata = {
 	title,
 	description,
 	openGraph: {
 		title,
-		description
+		description,
 	},
 	twitter: {
 		title,
 		description,
-		card: 'summary_large_image'
-	}
+		card: "summary_large_image",
+	},
 };
 
 export default function Posts() {
@@ -104,9 +104,9 @@ export default function Posts() {
 					，偶尔也会记录 <b>其他内容</b>
 				</p>
 			</header>
-			<div className={cn('grid grid-cols-1 gap-4', false ? 'grid-cols-2' : '')}>
+			<div className={cn("grid grid-cols-1 gap-4")}>
 				{sortedPosts.map((post, idx) => (
-					<PostCard showCover={false} key={idx} post={post} />
+					<PostCard showCover={false} key={post._id} post={post} />
 				))}
 			</div>
 		</Container>

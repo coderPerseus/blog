@@ -1,7 +1,8 @@
-import { type IconProps } from '@/assets';
+import type { IconProps } from "@/assets";
 
 export function UsersIcon(props: IconProps = {}) {
 	return (
+		// biome-ignore lint/a11y/noSvgWithoutTitle: <explanation>
 		<svg
 			viewBox="0 0 24 24"
 			fill="none"

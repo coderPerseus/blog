@@ -1,23 +1,23 @@
-'use client';
+"use client";
 
-import '@/style/tocbot.css';
-import { Variants, motion, useScroll } from 'framer-motion';
-import { useEffect } from 'react';
-import tocbot from 'tocbot';
+import "@/style/tocbot.css";
+import { type Variants, motion, useScroll } from "framer-motion";
+import { useEffect } from "react";
+import * as tocbot from "tocbot";
 
 const listVariants: Variants = {
 	hidden: { opacity: 0 },
 	visible: {
 		opacity: 1,
 		transition: {
-			when: 'beforeChildren',
+			when: "beforeChildren",
 			staggerChildren: 0.08,
 			delay: 0.255,
-			type: 'spring',
+			type: "spring",
 			stiffness: 150,
-			damping: 20
-		}
-	}
+			damping: 20,
+		},
+	},
 };
 
 // const itemVariants: Variants = {
@@ -33,21 +33,21 @@ export default function Toc() {
 
 	useEffect(() => {
 		tocbot.init({
-			tocSelector: '.js-toc',
-			contentSelector: '.js-toc-content',
-			headingSelector: 'h1, h2, h3, h4, h5, h6',
-			linkClass: 'toc-link',
-			activeListItemClass: 'is-active-li',
-			listClass: 'toc-list',
-			listItemClass: 'toc-list-item',
+			tocSelector: ".js-toc",
+			contentSelector: ".js-toc-content",
+			headingSelector: "h1, h2, h3, h4, h5, h6",
+			linkClass: "toc-link",
+			activeListItemClass: "is-active-li",
+			listClass: "toc-list",
+			listItemClass: "toc-list-item",
 			collapseDepth: 6,
 			scrollSmooth: true,
 			scrollSmoothDuration: 420,
-			scrollSmoothOffset: -10
+			scrollSmoothOffset: -10,
 		});
 
 		const handleScroll = () => {
-			const activeLink = document.querySelector('.toc-link.is-active-link');
+			const activeLink = document.querySelector(".toc-link.is-active-link");
 			if (activeLink) {
 				// setHighlightedHeadingId(
 				// 	activeLink.getAttribute('href')?.slice(1) || null
@@ -55,13 +55,13 @@ export default function Toc() {
 			}
 		};
 
-		window.addEventListener('scroll', handleScroll);
+		window.addEventListener("scroll", handleScroll);
 
 		return () => {
 			tocbot.destroy();
-			window.removeEventListener('scroll', handleScroll);
+			window.removeEventListener("scroll", handleScroll);
 		};
-	}, [scrollY]);
+	}, []);
 
 	return (
 		<div className="toc-container">

@@ -1,7 +1,8 @@
-import { type IconProps } from '..';
+import type { IconProps } from "..";
 
 export function GoogleBrandIcon(props: IconProps = {}) {
 	return (
+		// biome-ignore lint/a11y/noSvgWithoutTitle: <explanation>
 		<svg
 			width="1em"
 			height="1em"

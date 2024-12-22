@@ -1,11 +1,11 @@
-import { Container } from '@/components/Container';
-import { allPosts } from 'contentlayer/generated';
-import { useMDXComponent } from 'next-contentlayer/hooks';
-import { notFound } from 'next/navigation';
+import { Container } from "@/components/Container";
+import { allPosts } from "contentlayer/generated";
+import { useMDXComponent } from "next-contentlayer/hooks";
+import { notFound } from "next/navigation";
 
 export const generateMetadata = () => {
-	const post = allPosts.find((post) => post.slug === 'about');
-	if (!post) throw new Error(`Post not found for `);
+	const post = allPosts.find((post) => post.slug === "about");
+	if (!post) throw new Error("Post not found for ");
 	const title = post.title;
 	const description = post.description;
 	return {
@@ -13,18 +13,18 @@ export const generateMetadata = () => {
 		description,
 		openGraph: {
 			title,
-			description
+			description,
 		},
 		twitter: {
 			title,
 			description,
-			card: 'summary_large_image'
-		}
+			card: "summary_large_image",
+		},
 	};
 };
 
 const AboutPage = () => {
-	const post = allPosts.find((post) => post.slug === 'about');
+	const post = allPosts.find((post) => post.slug === "about");
 	if (!post) notFound();
 	const MDXContent = useMDXComponent(post.body.code);
 

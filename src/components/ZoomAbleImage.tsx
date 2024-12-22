@@ -1,9 +1,9 @@
-'use client';
-import { ClientOnly } from '@/components/ClientOnly';
-import Image from 'next/image';
-import React from 'react';
-import Zoom from 'react-medium-image-zoom';
-import 'react-medium-image-zoom/dist/styles.css';
+"use client";
+import { ClientOnly } from "@/components/ClientOnly";
+import Image from "next/image";
+import type React from "react";
+import Zoom from "react-medium-image-zoom";
+import "react-medium-image-zoom/dist/styles.css";
 
 interface ZoomAbleImageProps {
 	src: string;
@@ -16,7 +16,7 @@ const ZoomAbleImage: React.FC<ZoomAbleImageProps> = ({
 	src,
 	alt,
 	width,
-	height
+	height,
 }) => {
 	return (
 		// @ts-ignore

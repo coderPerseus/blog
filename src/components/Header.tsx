@@ -1,6 +1,5 @@
-'use client';
+"use client";
 
-import { cn } from '@/lib/utils';
 // import {
 // 	SignedIn,
 // 	SignedOut,
@@ -8,26 +7,27 @@ import { cn } from '@/lib/utils';
 // 	UserButton,
 // 	useUser
 // } from '@clerk/nextjs';
-import { clamp } from '@/lib/math';
+import { clamp } from "@/lib/math";
+import { cn } from "@/lib/utils";
 import {
 	AnimatePresence,
 	motion,
 	useMotionTemplate,
-	useMotionValue
-} from 'framer-motion';
-import { usePathname } from 'next/navigation';
-import React from 'react';
-import { Avatar } from './Avatar';
-import { Container } from './Container';
-import { NavigationBar } from './NavigationBar';
+	useMotionValue,
+} from "framer-motion";
 // import { ThemeToggle } from './ThemeToggle';
-import dynamic from 'next/dynamic';
+import dynamic from "next/dynamic";
+import { usePathname } from "next/navigation";
+import React from "react";
+import { Avatar } from "./Avatar";
+import { Container } from "./Container";
+import { NavigationBar } from "./NavigationBar";
 
-const ThemeToggle = dynamic(() => import('./ThemeToggle'), {
-	ssr: false
+const ThemeToggle = dynamic(() => import("./ThemeToggle"), {
+	ssr: false,
 });
 export function Header() {
-	const isHomePage = usePathname() === '/';
+	const isHomePage = usePathname() === "/";
 
 	const headerRef = React.useRef<HTMLDivElement>(null);
 	const avatarRef = React.useRef<HTMLDivElement>(null);
@@ -38,6 +38,7 @@ export function Header() {
 	const avatarBorderX = useMotionValue(0);
 	const avatarBorderScale = useMotionValue(1);
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
 	React.useEffect(() => {
 		const downDelay = avatarRef.current?.offsetTop ?? 0;
 		const upDelay = 64;
@@ -59,35 +60,35 @@ export function Header() {
 			const scrollY = clamp(
 				window.scrollY,
 				0,
-				document.body.scrollHeight - window.innerHeight
+				document.body.scrollHeight - window.innerHeight,
 			);
 
 			if (isInitial.current) {
-				setProperty('--header-position', 'sticky');
+				setProperty("--header-position", "sticky");
 			}
 
-			setProperty('--content-offset', `${downDelay}px`);
+			setProperty("--content-offset", `${downDelay}px`);
 
 			if (isInitial.current || scrollY < downDelay) {
-				setProperty('--header-height', `${downDelay + height}px`);
-				setProperty('--header-mb', `${-downDelay}px`);
+				setProperty("--header-height", `${downDelay + height}px`);
+				setProperty("--header-mb", `${-downDelay}px`);
 			} else if (top + height < -upDelay) {
 				const offset = Math.max(height, scrollY - upDelay);
-				setProperty('--header-height', `${offset}px`);
-				setProperty('--header-mb', `${height - offset}px`);
+				setProperty("--header-height", `${offset}px`);
+				setProperty("--header-mb", `${height - offset}px`);
 			} else if (top === 0) {
-				setProperty('--header-height', `${scrollY + height}px`);
-				setProperty('--header-mb', `${-scrollY}px`);
+				setProperty("--header-height", `${scrollY + height}px`);
+				setProperty("--header-mb", `${-scrollY}px`);
 			}
 
 			if (top === 0 && scrollY > 0 && scrollY >= downDelay) {
-				setProperty('--header-inner-position', 'fixed');
-				removeProperty('--header-top');
-				removeProperty('--avatar-top');
+				setProperty("--header-inner-position", "fixed");
+				removeProperty("--header-top");
+				removeProperty("--avatar-top");
 			} else {
-				removeProperty('--header-inner-position');
-				setProperty('--header-top', '0px');
-				setProperty('--avatar-top', '0px');
+				removeProperty("--header-inner-position");
+				setProperty("--header-top", "0px");
+				setProperty("--avatar-top", "0px");
 			}
 		}
 
@@ -117,7 +118,7 @@ export function Header() {
 			avatarBorderX.set((-toX + x) * borderScale);
 			avatarBorderScale.set(borderScale);
 
-			setProperty('--avatar-border-opacity', scale === toScale ? '1' : '0');
+			setProperty("--avatar-border-opacity", scale === toScale ? "1" : "0");
 		}
 
 		function updateStyles() {
@@ -127,12 +128,12 @@ export function Header() {
 		}
 
 		updateStyles();
-		window.addEventListener('scroll', updateStyles, { passive: true });
-		window.addEventListener('resize', updateStyles);
+		window.addEventListener("scroll", updateStyles, { passive: true });
+		window.addEventListener("resize", updateStyles);
 
 		return () => {
-			window.removeEventListener('scroll', updateStyles);
-			window.removeEventListener('resize', updateStyles);
+			window.removeEventListener("scroll", updateStyles);
+			window.removeEventListener("resize", updateStyles);
 		};
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [isHomePage]);
@@ -146,17 +147,17 @@ export function Header() {
 			event.preventDefault();
 			setIsShowingAltAvatar((prev) => !prev);
 		},
-		[]
+		[],
 	);
 
 	return (
 		<>
 			<motion.header
 				className={cn(
-					'pointer-events-none relative z-50 mb-[var(--header-mb,0px)] flex flex-col',
+					"pointer-events-none relative z-50 mb-[var(--header-mb,0px)] flex flex-col",
 					isHomePage
-						? 'h-[var(--header-height,180px)]'
-						: 'h-[var(--header-height,64px)]'
+						? "h-[var(--header-height,180px)]"
+						: "h-[var(--header-height,64px)]",
 				)}
 				layout
 				layoutRoot
@@ -172,21 +173,21 @@ export function Header() {
 								className="top-0 order-last -mb-3 pt-3"
 								style={{
 									position:
-										'var(--header-position)' as React.CSSProperties['position']
+										"var(--header-position)" as React.CSSProperties["position"],
 								}}
 							>
 								<motion.div
 									className="top-[var(--avatar-top,theme(spacing.3))] w-full select-none"
 									style={{
 										position:
-											'var(--header-inner-position)' as React.CSSProperties['position']
+											"var(--header-inner-position)" as React.CSSProperties["position"],
 									}}
 									initial={{ opacity: 0, y: 15 }}
 									animate={{ opacity: 1, y: 0 }}
 									transition={{
-										type: 'spring',
+										type: "spring",
 										damping: 30,
-										stiffness: 200
+										stiffness: 200,
 									}}
 								>
 									<motion.div
@@ -198,7 +199,7 @@ export function Header() {
 										<motion.div
 											className="absolute left-0 top-3 origin-left opacity-[var(--avatar-border-opacity,0)] transition-opacity"
 											style={{
-												transform: avatarBorderTransform
+												transform: avatarBorderTransform,
 											}}
 										>
 											<Avatar />
@@ -207,7 +208,7 @@ export function Header() {
 										<motion.div
 											className="block h-16 w-16 origin-left "
 											style={{
-												transform: avatarTransform
+												transform: avatarTransform,
 											}}
 										>
 											<Avatar.Image
@@ -227,14 +228,14 @@ export function Header() {
 					className="top-0 z-10 h-16 pt-6"
 					style={{
 						position:
-							'var(--header-position)' as React.CSSProperties['position']
+							"var(--header-position)" as React.CSSProperties["position"],
 					}}
 				>
 					<Container
 						className="top-[var(--header-top,theme(spacing.6))] w-full"
 						style={{
 							position:
-								'var(--header-inner-position)' as React.CSSProperties['position']
+								"var(--header-inner-position)" as React.CSSProperties["position"],
 						}}
 					>
 						<div className="relative flex gap-4">
@@ -243,9 +244,9 @@ export function Header() {
 								initial={{ opacity: 0, y: 15 }}
 								animate={{ opacity: 1, y: 0 }}
 								transition={{
-									type: 'spring',
+									type: "spring",
 									damping: 30,
-									stiffness: 200
+									stiffness: 200,
 								}}
 							>
 								<AnimatePresence>

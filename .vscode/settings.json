@@ -1,34 +1,44 @@
 {
 	"editor.tabSize": 2,
+
 	"search.exclude": {
 		"package-lock.json": true
 	},
-	"editor.codeActionsOnSave": {
-		"source.fixAll": "explicit",
-		"source.organizeImports": "explicit",
-		"source.fixAll.eslint": "explicit"
-	},
+
+	// Biome 配置
 	"editor.formatOnSave": true,
-	"prettier.requireConfig": true,
-	"editor.defaultFormatter": "esbenp.prettier-vscode",
-	"commentTranslate.source": "Bing",
-	"typescript.tsdk": "node_modules/typescript/lib", // Use the workspace version of TypeScript
-	"typescript.enablePromptUseWorkspaceTsdk": true, // For security reasons it's require that users opt into using the workspace version of typescript
+	"editor.defaultFormatter": "biomejs.biome",
+
+	// Biome 的代码操作配置
+	"editor.codeActionsOnSave": {
+		"quickfix.biome": "explicit",
+		"source.organizeImports.biome": "explicit"
+	},
+
+	// TypeScript 配置保持不变
+	"typescript.tsdk": "node_modules/typescript/lib",
+	"typescript.enablePromptUseWorkspaceTsdk": true,
 	"typescript.preferences.autoImportFileExcludePatterns": [
-		// useRouter should be imported from `next/navigation` instead of `next/router`
 		"next/router.d.ts",
 		"next/dist/client/router.d.ts",
-		// give priority for Link to next/link instead of lucide-react
 		"lucide-react"
 	],
-	"typescript.preferences.preferTypeOnlyAutoImports": true, // Prefer type-only imports
-	"testing.openTesting": "neverOpen", // Don't open the testing view automatically when running tests
-	// Multiple language settings for json and jsonc files
-	"[json][jsonc][yaml]": {
-		"editor.formatOnSave": true,
-		"editor.defaultFormatter": "esbenp.prettier-vscode"
+	"typescript.preferences.preferTypeOnlyAutoImports": true,
+
+	// 测试配置保持不变
+	"testing.openTesting": "neverOpen",
+	"testing.automaticallyOpenTestResults": "neverOpen",
+
+	// 为特定文件类型设置 Biome
+	"[javascript][typescript][javascriptreact][typescriptreact]": {
+		"editor.defaultFormatter": "biomejs.biome"
 	},
-	"prettier.ignorePath": ".gitignore",
-	"commentTranslate.hover.enabled": true,
-	"testing.automaticallyOpenTestResults": "neverOpen" // Don't run prettier for files listed in .gitignore
+
+	"[json][jsonc][yaml]": {
+		"editor.defaultFormatter": "biomejs.biome"
+	},
+
+	// 翻译插件配置保持不变
+	"commentTranslate.source": "Bing",
+	"commentTranslate.hover.enabled": true
 }

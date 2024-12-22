@@ -1,11 +1,12 @@
-'use client';
-import Script from 'next/script';
+"use client";
+import Script from "next/script";
 const BaiDuAnalytics = () => {
 	return (
 		<>
 			<Script
 				id="baidu-tongji"
 				strategy="afterInteractive"
+				// biome-ignore lint/security/noDangerouslySetInnerHtml: <explanation>
 				dangerouslySetInnerHTML={{
 					__html: `
           var _hmt = _hmt || [];
@@ -15,7 +16,7 @@ const BaiDuAnalytics = () => {
             var s = document.getElementsByTagName("script")[0]; 
             s.parentNode.insertBefore(hm, s);
           })();
-          `
+          `,
 				}}
 			/>
 		</>

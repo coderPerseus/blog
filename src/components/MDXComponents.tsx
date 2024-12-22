@@ -1,7 +1,7 @@
-import ZoomAbleImage from './ZoomAbleImage';
+import ZoomAbleImage from "./ZoomAbleImage";
 
 const MDXComponents = {
-	img: ZoomAbleImage
+	img: ZoomAbleImage,
 	// 其他自定义组件...
 };
 

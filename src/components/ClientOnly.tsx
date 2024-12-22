@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import * as React from 'react';
+import * as React from "react";
 
 export function ClientOnly({ children }: { children: React.ReactNode }) {
 	const [isMounted, setIsMounted] = React.useState(false);

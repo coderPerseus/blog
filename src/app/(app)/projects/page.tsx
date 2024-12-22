@@ -1,37 +1,34 @@
-import { Container } from '@/components/Container';
-import { type Metadata } from 'next';
-import { Projects } from './Projects';
+import { Container } from "@/components/Container";
+import type { Metadata } from "next";
+import { Projects } from "./Projects";
 const technologyList = [
-	'HTML',
-	'CSS',
-	'JavaScript',
-	'React',
-	'Vue',
-	'Next.js',
-	'tailwindcss',
-	'TypeScript',
-	'node',
-	'Nest.js',
-	'vite',
-	'webpack'
+	"HTML",
+	"CSS",
+	"JavaScript",
+	"React",
+	"Vue",
+	"Next.js",
+	"tailwindcss",
+	"TypeScript",
+	"node",
+	"Nest.js",
+	"vite",
+	"webpack",
 ];
-const title = '我的项目';
-const description =
-	'我在工作和自己学习过程中开发的一些项目，主要是前端领域，包括的技术有：' +
-	technologyList.join(',') +
-	'等现代技术栈实践。这里汇集了企业级应用、响应式网站和创新性Web解决方案。了解我的技术实力与项目经验。';
+const title = "我的项目";
+const description = `我在工作和自己学习过程中开发的一些项目，主要是前端领域，包括的技术有：${technologyList.join(",")}等现代技术栈实践。这里汇集了企业级应用、响应式网站和创新性Web解决方案。了解我的技术实力与项目经验。`;
 export const metadata = {
 	title,
 	description,
 	openGraph: {
 		title,
-		description
+		description,
 	},
 	twitter: {
 		title,
 		description,
-		card: 'summary_large_image'
-	}
+		card: "summary_large_image",
+	},
 } satisfies Metadata;
 
 export default function ProjectsPage() {

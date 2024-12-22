@@ -1,5 +1,5 @@
-import * as iconList from '@/assets/index';
-import { Container } from '@/components/Container';
+import * as iconList from "@/assets/index";
+import { Container } from "@/components/Container";
 
 export default function IconPage() {
 	return (

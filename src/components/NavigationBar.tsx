@@ -1,29 +1,29 @@
-'use client';
+"use client";
 
 import {
 	NavigationMenu,
 	NavigationMenuContent,
 	NavigationMenuItem,
 	NavigationMenuList,
-	NavigationMenuTrigger
-} from '@/components/ui/navigation-menu';
+	NavigationMenuTrigger,
+} from "@/components/ui/navigation-menu";
 import {
 	Popover,
 	PopoverContent,
-	PopoverTrigger
-} from '@/components/ui/popover';
-import siteMetadata from '@/config/site';
-import { cn } from '@/lib/utils';
-import { motion, useMotionTemplate, useMotionValue } from 'framer-motion';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import React from 'react';
+	PopoverTrigger,
+} from "@/components/ui/popover";
+import siteMetadata from "@/config/site";
+import { cn } from "@/lib/utils";
+import { motion, useMotionTemplate, useMotionValue } from "framer-motion";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import React from "react";
 
 const navigationItems = siteMetadata.navigationItems;
 
 const DropdownNavItem = ({
 	children,
-	href
+	href,
 }: {
 	children: React.ReactNode;
 	href: string;
@@ -55,16 +55,16 @@ const DropdownNavItem = ({
 function NavItem({
 	href,
 	children,
-	menu
+	menu,
 }: {
 	href: string;
 	children: React.ReactNode;
 	menu: boolean | undefined;
 }) {
-	const moreHrefList = ['/icon'];
+	const moreHrefList = ["/icon"];
 	const formatHref = (href: string) => {
 		if (moreHrefList.includes(href)) {
-			return `/more`;
+			return "/more";
 		}
 		return href;
 	};
@@ -79,10 +79,10 @@ function NavItem({
 	return (
 		<li
 			className={cn(
-				'relative block whitespace-nowrap px-3 py-2 transition',
+				"relative block whitespace-nowrap px-3 py-2 transition",
 				isActive
-					? 'text-violet-500 dark:text-violet-400'
-					: 'hover:text-violet-500 dark:hover:text-violet-400'
+					? "text-violet-500 dark:text-violet-400"
+					: "hover:text-violet-500 dark:hover:text-violet-400",
 			)}
 		>
 			{menu ? (
@@ -96,7 +96,7 @@ function NavItem({
 				<Link
 					href={href}
 					prefetch
-					target={href === '/feed.xml' ? '_blank' : '_self'}
+					target={href === "/feed.xml" ? "_blank" : "_self"}
 				>
 					{children}
 					{isActive && <ActiveBox />}
@@ -120,7 +120,7 @@ function Desktop({
 			mouseY.set(clientY - bounds.top);
 			radius.set(Math.sqrt(bounds.width ** 2 + bounds.height ** 2) / 2.5);
 		},
-		[mouseX, mouseY, radius]
+		[mouseX, mouseY, radius],
 	);
 	const background = useMotionTemplate`radial-gradient(${radius}px circle at ${mouseX}px ${mouseY}px, var(--spotlight-color) 0%, transparent 65%)`;
 
@@ -128,12 +128,12 @@ function Desktop({
 		<nav
 			onMouseMove={handleMouseMove}
 			className={cn(
-				'group relative',
-				'rounded-full bg-gradient-to-b from-zinc-50/70 to-white/90',
-				'shadow-lg shadow-zinc-800/5 ring-1 ring-zinc-900/5 backdrop-blur-md',
-				'dark:from-zinc-900/70 dark:to-zinc-800/90 dark:ring-zinc-100/10',
-				'[--spotlight-color:rgb(236_252_203_/_0.6)] dark:[--spotlight-color:rgb(217_249_157_/_0.07)]',
-				className
+				"group relative",
+				"rounded-full bg-gradient-to-b from-zinc-50/70 to-white/90",
+				"shadow-lg shadow-zinc-800/5 ring-1 ring-zinc-900/5 backdrop-blur-md",
+				"dark:from-zinc-900/70 dark:to-zinc-800/90 dark:ring-zinc-100/10",
+				"[--spotlight-color:rgb(236_252_203_/_0.6)] dark:[--spotlight-color:rgb(217_249_157_/_0.07)]",
+				className,
 			)}
 			{...props}
 		>
@@ -157,14 +157,14 @@ function Desktop({
 function MobileNavItem({
 	href,
 	onClose,
-	children
+	children,
 }: Readonly<{
 	href: string;
 	onClose: () => void;
 	children: React.ReactNode;
 }>) {
 	return (
-		<li onClick={onClose}>
+		<li onClick={onClose} onKeyUp={(e) => e.key === "Enter" && onClose()}>
 			<Link href={href} prefetch={true} className="block py-2">
 				{children}
 			</Link>
@@ -177,11 +177,12 @@ function Mobile(props: React.HTMLAttributes<HTMLDivElement>) {
 	return (
 		<Popover open={open} {...props}>
 			<PopoverTrigger asChild>
+				{/* biome-ignore lint/a11y/useButtonType: <explanation> */}
 				<button
 					onClick={() => setOpen(!open)}
 					className={cn(
-						'group flex items-center rounded-full bg-gradient-to-b from-zinc-50/20 to-white/80 px-4 py-2 text-sm font-medium text-zinc-800 shadow-lg shadow-zinc-800/5 ring-1 ring-zinc-900/5 backdrop-blur-md focus:outline-none focus-visible:ring-2 dark:from-zinc-900/30 dark:to-zinc-800/80 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20 dark:focus-visible:ring-yellow-500/80',
-						props.className
+						"group flex items-center rounded-full bg-gradient-to-b from-zinc-50/20 to-white/80 px-4 py-2 text-sm font-medium text-zinc-800 shadow-lg shadow-zinc-800/5 ring-1 ring-zinc-900/5 backdrop-blur-md focus:outline-none focus-visible:ring-2 dark:from-zinc-900/30 dark:to-zinc-800/80 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20 dark:focus-visible:ring-yellow-500/80",
+						props.className,
 					)}
 				>
 					前往
@@ -229,5 +230,5 @@ function Mobile(props: React.HTMLAttributes<HTMLDivElement>) {
 
 export const NavigationBar = {
 	Desktop,
-	Mobile
+	Mobile,
 } as const;

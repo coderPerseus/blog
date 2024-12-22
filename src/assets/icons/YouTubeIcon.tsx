@@ -1,7 +1,8 @@
-import { type IconProps } from '@/assets';
+import type { IconProps } from "@/assets";
 
 export function YouTubeIcon(props: IconProps = {}) {
 	return (
+		// biome-ignore lint/a11y/noSvgWithoutTitle: <explanation>
 		<svg
 			width="1em"
 			height="1em"

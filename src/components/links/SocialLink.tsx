@@ -1,26 +1,27 @@
-'use client';
+"use client";
 
-import { type IconProps } from '@/assets';
-import * as iconList from '@/assets/index';
-import Douyin from '@/assets/media/douyin.webp';
-import Qq from '@/assets/media/qq.webp';
-import Wx from '@/assets/media/wx.webp';
-import WxPublic from '@/assets/media/wxPublic.webp';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import type { IconProps } from "@/assets";
+import * as iconList from "@/assets/index";
+import Douyin from "@/assets/media/douyin.webp";
+import Qq from "@/assets/media/qq.webp";
+import Wx from "@/assets/media/wx.webp";
+import WxPublic from "@/assets/media/wxPublic.webp";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipPortal,
 	TooltipProvider,
-	TooltipTrigger
-} from '@/components/ui/tooltip';
-import { copyTextToClipboard } from '@/lib';
-import { makeBlurDataURL } from '@/lib/images';
-import { AnimatePresence, motion } from 'framer-motion';
-import Image, { StaticImageData } from 'next/image';
-import Link, { type LinkProps } from 'next/link';
-import React, { FC } from 'react';
-import siteMetadata from '~/src/config/site';
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { copyTextToClipboard } from "@/lib";
+import { makeBlurDataURL } from "@/lib/images";
+import { AnimatePresence, motion } from "framer-motion";
+import Image, { type StaticImageData } from "next/image";
+import Link, { type LinkProps } from "next/link";
+import type React from "react";
+import type { FC } from "react";
+import siteMetadata from "~/src/config/site";
 
 type IconName = keyof typeof iconList;
 
@@ -37,26 +38,26 @@ const IconComponents: Record<
 > = iconList;
 
 type Platform =
-	| 'github'
-	| 'twitter'
-	| 'youtube'
-	| 'telegram'
-	| 'bilibili'
-	| 'mail'
-	| 'rss'
-	| '微信'
-	| '微信公众号';
+	| "github"
+	| "twitter"
+	| "youtube"
+	| "telegram"
+	| "bilibili"
+	| "mail"
+	| "rss"
+	| "微信"
+	| "微信公众号";
 
 const picMap: Record<string, StaticImageData> = {
 	wx: Wx,
 	wxPublic: WxPublic,
 	douyin: Douyin,
-	qq: Qq
+	qq: Qq,
 };
 const PictureDialog = ({
 	platform,
 	href,
-	children
+	children,
 }: {
 	platform?: Platform | string;
 	href: string;
@@ -74,8 +75,8 @@ const PictureDialog = ({
 						placeholder="blur"
 						blurDataURL={makeBlurDataURL(16, 16)}
 						style={{
-							width: '100%',
-							height: 'auto'
+							width: "100%",
+							height: "auto",
 						}}
 						sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw"
 					/>
@@ -90,12 +91,17 @@ const LinkHrefWrapper: FC<TypeSocialLinkProps> = ({
 	children,
 	...props
 }) => {
-	const textList = ['邮箱'];
-	const isText = textList.includes(platform ?? '');
+	const textList = ["邮箱"];
+	const isText = textList.includes(platform ?? "");
 	return isText ? (
 		<span
 			onTouchEnd={() => copyTextToClipboard(href)}
 			onClick={() => copyTextToClipboard(href)}
+			onKeyUp={(e) => {
+				if (e.key === "Enter" || e.key === " ") {
+					copyTextToClipboard(href);
+				}
+			}}
 		>
 			{children}
 		</span>

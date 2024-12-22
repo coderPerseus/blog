@@ -1,11 +1,11 @@
-import { Footer } from '@/components/Footer';
-import { GlobalBg } from '@/components/GlobalBg';
-import { Header } from '@/components/Header';
-import { Suspense } from 'react';
+import { Footer } from "@/components/Footer";
+import { GlobalBg } from "@/components/GlobalBg";
+import { Header } from "@/components/Header";
+import { Suspense } from "react";
 // 导入 代码 样式
 // import '@/style/prism-coldark-dark.css';
 export default function RootLayout({
-	children
+	children,
 }: Readonly<{
 	children: React.ReactNode;
 }>) {

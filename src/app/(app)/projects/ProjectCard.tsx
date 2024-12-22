@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import { ExternalLinkIcon } from '@/assets';
-import Tag from '@/components/Tag';
-import { Card } from '@/components/ui/Card';
+import { ExternalLinkIcon } from "@/assets";
+import Tag from "@/components/Tag";
+import { Card } from "@/components/ui/Card";
 import {
 	AnimatePresence,
 	motion,
 	useMotionTemplate,
-	useMotionValue
-} from 'framer-motion';
-import Image from 'next/image';
-import React from 'react';
+	useMotionValue,
+} from "framer-motion";
+import Image from "next/image";
+import React from "react";
 
 export function ProjectCard({ project }: { project: ProjectItem }) {
 	const { id, url, icon, name, tags, description } = project;
@@ -25,11 +25,11 @@ export function ProjectCard({ project }: { project: ProjectItem }) {
 			mouseY.set(clientY - bounds.top);
 			radius.set(Math.sqrt(bounds.width ** 2 + bounds.height ** 2) / 2);
 		},
-		[mouseX, mouseY, radius]
+		[mouseX, mouseY, radius],
 	);
 	const maskBackground = useMotionTemplate`radial-gradient(circle ${radius}px at ${mouseX}px ${mouseY}px, black 40%, transparent)`;
 	const [isHovering, setIsHovering] = React.useState(false);
-	const host = new URL(url ?? '').host;
+	const host = new URL(url ?? "").host;
 	return (
 		<Card
 			as="li"
@@ -40,7 +40,7 @@ export function ProjectCard({ project }: { project: ProjectItem }) {
 		>
 			<div className="relative z-10 flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-md shadow-zinc-800/5 ring-1 ring-zinc-900/5 dark:border dark:border-zinc-700/50 dark:bg-zinc-800 dark:ring-0">
 				<Image
-					src={icon ?? ''}
+					src={icon ?? ""}
 					alt=""
 					width={36}
 					height={36}
@@ -49,13 +49,15 @@ export function ProjectCard({ project }: { project: ProjectItem }) {
 				/>
 			</div>
 			<h2 className="mt-6 text-base font-bold text-zinc-800 dark:text-zinc-100">
-				<Card.Link href={url ?? ''} target="_blank">
+				<Card.Link href={url ?? ""} target="_blank">
 					{name}
 				</Card.Link>
 			</h2>
 			<Card.Description>{description}</Card.Description>
 			<div className="mt-4">
-				{tags?.map((ele) => <Tag key={ele}>{ele}</Tag>)}
+				{tags?.map((ele) => (
+					<Tag key={ele}>{ele}</Tag>
+				))}
 			</div>
 			<p className="pointer-events-none relative z-40 mt-6 flex items-center text-sm font-medium text-zinc-400 transition group-hover:-translate-y-0.5 group-hover:text-violet-600 dark:text-zinc-200 dark:group-hover:text-violet-400">
 				<span className="mr-2">{host}</span>
@@ -69,7 +71,7 @@ export function ProjectCard({ project }: { project: ProjectItem }) {
 						initial={{ opacity: 0 }}
 						animate={{ opacity: 1 }}
 						style={{
-							WebkitMaskImage: maskBackground
+							WebkitMaskImage: maskBackground,
 						}}
 						exit={{ opacity: 0 }}
 					>

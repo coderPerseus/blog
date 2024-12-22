@@ -1,7 +1,7 @@
-import { cn } from '@/lib/utils';
-import Link, { type LinkProps } from 'next/link';
+import { cn } from "@/lib/utils";
+import Link, { type LinkProps } from "next/link";
 
-import { type IconProps } from '@/assets';
+import { type IconProps } from "@/assets";
 
 function ChevronRightIcon(props: IconProps) {
 	return (
@@ -17,7 +17,7 @@ function ChevronRightIcon(props: IconProps) {
 }
 
 export function Card({
-	as: Component = 'div',
+	as: Component = "div",
 	className,
 	children,
 	...props
@@ -31,7 +31,7 @@ export function Card({
 }) {
 	return (
 		<Component
-			className={cn(className, 'group relative flex flex-col items-start')}
+			className={cn(className, "group relative flex flex-col items-start")}
 			{...props}
 		>
 			{children}
@@ -42,7 +42,7 @@ export function Card({
 Card.Link = function CardLink({
 	children,
 	...props
-}: React.ComponentPropsWithoutRef<'a'> &
+}: React.ComponentPropsWithoutRef<"a"> &
 	LinkProps & { children: React.ReactNode }) {
 	return (
 		<>
@@ -56,9 +56,9 @@ Card.Link = function CardLink({
 };
 
 Card.Title = function CardTitle({
-	as: Component = 'h2',
+	as: Component = "h2",
 	href,
-	children
+	children,
 }: {
 	as?: keyof JSX.IntrinsicElements;
 	href?: string;
@@ -73,7 +73,7 @@ Card.Title = function CardTitle({
 
 Card.Description = function CardDescription({
 	children,
-	className
+	className,
 }: {
 	children: React.ReactNode;
 	className?: string;
@@ -81,8 +81,8 @@ Card.Description = function CardDescription({
 	return (
 		<p
 			className={cn(
-				'relative z-10 mt-2 text-sm text-zinc-600 dark:text-zinc-400',
-				className
+				"relative z-10 mt-2 text-sm text-zinc-600 dark:text-zinc-400",
+				className,
 			)}
 		>
 			{children}
@@ -103,7 +103,7 @@ Card.Cta = function CardCta({ children }: { children: React.ReactNode }) {
 };
 
 Card.Eyebrow = function CardEyebrow({
-	as: Component = 'p',
+	as: Component = "p",
 	decorate = false,
 	className,
 	children,
@@ -118,8 +118,8 @@ Card.Eyebrow = function CardEyebrow({
 		<Component
 			className={cn(
 				className,
-				'relative z-10 order-first mb-3 flex items-center text-sm text-zinc-400 dark:text-zinc-500',
-				decorate && 'pl-3.5'
+				"relative z-10 order-first mb-3 flex items-center text-sm text-zinc-400 dark:text-zinc-500",
+				decorate && "pl-3.5",
 			)}
 			{...props}
 		>

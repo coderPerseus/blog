@@ -1,5 +1,5 @@
-'use client';
-import * as Icons from '@radix-ui/react-icons';
+"use client";
+import * as Icons from "@radix-ui/react-icons";
 export default function DynamicIconRender({
 	iconKey,
 	...props

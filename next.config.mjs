@@ -1,13 +1,13 @@
-import { withContentlayer } from 'next-contentlayer';
-import generate from './scripts/generate-rss.js';
+import { withContentlayer } from "next-contentlayer";
+import generate from "./scripts/generate-rss.js";
 /** @type {import('next').NextConfig} */
 const nextConfig = {
 	// 静态导出
-	output: 'export',
+	output: "export",
 	reactStrictMode: true,
 	swcMinify: true,
 	images: {
-		domains: ['blog-1304565468.cos.ap-shanghai.myqcloud.com', 'github.com']
+		domains: ["blog-1304565468.cos.ap-shanghai.myqcloud.com", "github.com"],
 	},
 	webpack: (config, { isServer }) => {
 		// if (isServer) {
@@ -16,7 +16,7 @@ const nextConfig = {
 		// }
 		generate();
 		return config;
-	}
+	},
 };
 
 export default withContentlayer(nextConfig);

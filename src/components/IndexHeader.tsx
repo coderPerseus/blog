@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { SnailIcon, SparkleIcon } from '@/assets';
-import { SocialLink } from '@/components/links/SocialLink';
-import siteMetadata from '@/config/site';
-import { motion } from 'framer-motion';
-import Balancer from 'react-wrap-balancer';
+import { SnailIcon, SparkleIcon } from "@/assets";
+import { SocialLink } from "@/components/links/SocialLink";
+import siteMetadata from "@/config/site";
+import { motion } from "framer-motion";
+import Balancer from "react-wrap-balancer";
 
 function Developer() {
 	return (
@@ -57,10 +57,10 @@ export function Headline() {
 				initial={{ opacity: 0, y: 30 }}
 				animate={{ opacity: 1, y: 0 }}
 				transition={{
-					type: 'spring',
+					type: "spring",
 					damping: 25,
 					stiffness: 100,
-					duration: 0.3
+					duration: 0.3,
 				}}
 			>
 				<Developer />，<Designer />，
@@ -72,11 +72,11 @@ export function Headline() {
 				initial={{ opacity: 0, y: 20 }}
 				animate={{ opacity: 1, y: 0 }}
 				transition={{
-					type: 'spring',
+					type: "spring",
 					damping: 30,
 					stiffness: 85,
 					duration: 0.3,
-					delay: 0.1
+					delay: 0.1,
 				}}
 			>
 				<Balancer>{siteMetadata.description}</Balancer>
@@ -86,11 +86,11 @@ export function Headline() {
 				initial={{ opacity: 0, y: 10 }}
 				animate={{ opacity: 1, y: 0 }}
 				transition={{
-					type: 'spring',
+					type: "spring",
 					damping: 50,
 					stiffness: 90,
 					duration: 0.35,
-					delay: 0.25
+					delay: 0.25,
 				}}
 			>
 				{siteMetadata.social.map((item) =>
@@ -103,7 +103,7 @@ export function Headline() {
 							aria-label={item.text}
 							platform={item.text}
 						/>
-					)
+					),
 				)}
 			</motion.div>
 		</div>
