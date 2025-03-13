@@ -14,5 +14,12 @@ npm root -g
 open .
 ```
 
+#### 二、找到指定端口的 PID ，然后 kill
+
+```bash
+ss -tulpn | grep xxxx
+kill PID
+```
+
 ---
 此文自动发布于：<a href="https://github.com/coderPerseus/blog/issues/47" target="_blank">github issues</a>
