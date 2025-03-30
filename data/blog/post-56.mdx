@@ -1,0 +1,310 @@
+---
+title: 如何写出受开发者欢迎的技术博客文章
+date: 2025-03-30T13:09:44Z
+slug: post-56
+author: chaseFunny：https://github.com/chaseFunny
+tags: ["blog","写作经验","好文翻译"]
+---
+
+> 好文翻译：https://refactoringenglish.com/chapters/write-blog-posts-developers-read/
+
+# 如何写出受开发者欢迎的技术博客文章
+
+最近我和一位开发者聊天，他尝试过写博客但放弃了，因为没人看他的文章。我看了他的博客，立刻明白了问题所在。
+
+这位开发者有独到的见解，但在呈现方式上犯了很多错误，把读者都赶跑了。可悲的是，这些问题很容易修复。一旦你学会识别它们，就会觉得显而易见，但很多博主多年来一直在重复这些错误。
+
+我知道这一点，因为我自己就是其中之一。
+
+我写软件开发博客已经九年了。最成功的文章有超过30万读者，但也有不少文章默默无闻，尤其是在最初几年。
+
+随着时间的推移，我总结出了一些让文章成功的技巧，也明白了哪些陷阱会导致文章无人问津。 文章大纲：
+
+- 为什么要听我的？
+    
+- 方法一：直奔主题
+    
+- 方法二：扩大受众范围
+    
+- 方法三：规划传播路径
+    
+- 方法四：多用图片
+    
+- 方法五：照顾速读读者
+    
+
+## 为什么要听我的？
+
+为了建立可信度，我得说一些自夸的话，虽然这感觉不太舒服：
+
+- 我运营[软件博客](https://mtlynch.io/)九年，每年有30万-50万独立读者。
+    
+- 我的文章超过30次登上 Hacker News 首页，多次排名第一。
+    
+    - 根据我自创的排名系统，我的个人博客在Hacker News上[排名第48](https://refactoringenglish.com/tools/hn-popularity/)。
+        
+    
+- 我通过一篇[热门博文](https://news.ycombinator.com/item?id=23927380)成功推出了一款独立产品。
+    
+- 我的文章经常出现在[Reddit](https://www.reddit.com/search?q=url%3Amtlynch.io&sort=relevance&t=all)和[Lobsters](https://lobste.rs/domains/mtlynch.io)上。
+    
+
+[![我的博客数据](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/work/mtlynch-analytics.webp)](https://refactoringenglish.com/chapters/write-blog-posts-developers-read/mtlynch-analytics.webp)我的博客数据
+
+我的[软件博客](https://mtlynch.io/)每年有30万-50万独立读者。
+
+我不敢自称是[世界上最优秀的软件博主](https://www.joelonsoftware.com/)，但我的经验和成功足以分享一些有用的经验。
+
+## 直奔主题
+
+技术博主最常见的错误就是东拉西扯。
+
+作者往往有宝贵的见解，却在前七段浪费篇幅，大谈函数式编程的历史或1973年去贝尔实验室的经历。等他们终于讲到有趣的部分时，读者早就关掉页面了。
+
+互联网时代的注意力很短暂。如果你迟迟不切入重点，读者会转而阅读其他数十亿篇文章。
+
+那么，如何让读者留下来继续阅读？
+
+读者打开文章时，会快速思考两个问题：
+
+1. 这篇文章是写给像我这样的人看的吗？
+    
+2. 读这篇文章对我有什么好处？
+    
+
+你需要在标题和前三个句子中回答这两个问题。如果第二段还没回答，那就危险了。
+
+要让读者觉得文章是为他们写的，可以提到他们关心的话题和使用他们熟悉的术语。如果抛出 jargon 或陌生概念，读者会认为文章不适合自己，直接离开。
+
+开头还应该明确说明文章能给读者带来什么好处，比如：
+
+- 读者可以在工作或个人生活中应用的技巧。
+    
+- 对影响读者工作或生活的概念的清晰解释。
+    
+- 帮助读者更好理解某项技术或行业的见解。
+    
+- 能引起读者共鸣的有趣故事。
+    
+
+[![iPod发布会](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/work/ipod-announcement.webp)](https://refactoringenglish.com/chapters/write-blog-posts-developers-read/ipod-announcement.webp)iPod发布会
+
+### 示例：《if got, want: 一种改进Go测试的简单方法》
+
+我最近写了一篇关于改进Go语言测试的[文章](https://mtlynch.io/if-got-want-improve-go-tests/)。
+
+以下是标题和第一段：
+
+> **if got, want: 一种改进Go测试的简单方法**
+> 
+> 有一个很棒的Go测试模式，但知道的人太少。我可以在30秒内教会你。
+
+这篇文章立即回答了那两个问题：
+
+- 这篇文章是写给谁看的？
+    
+    - **Go开发者。**
+        
+    
+- 读这篇文章有什么好处？
+    
+    - **30秒学会一个新的测试技巧。**
+        
+    
+
+## 扩大受众范围
+
+写文章时，你心里可能有一个目标读者群体。例如，如果你写了一篇《调试Java内存泄漏》，你可能假设读者是中高级Java开发者。
+
+但大多数技术博主不会问：“这个主题能否吸引更广泛的受众？”
+
+比如，“中高级Java开发者”是“Java开发者”的子集，而“Java开发者”又是“程序员”的子集，“程序员”又是“阅读博客的人”的子集。
+
+![开发者分类](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/work/programmer-categories.svg)
+开发者分类
+
+
+如果你为中高级Java开发者写了一篇文章，需要做多少调整才能吸引所有水平的 Java 开发者？
+
+通常只需要在开头加一两句话解释概念，或用更易懂的术语替换 jargon。
+
+> **Jeff**：索尼有一部未来科幻电影想拍。
+> 
+> **Nick**：太空里抽烟？
+> 
+> **Jeff**：那是最后的边疆，Nick。
+> 
+> **Nick**：但在纯氧环境下不会爆炸吗？
+> 
+> **Jeff**：可能会。但很容易解决。加一句台词：“感谢上帝我们发明了……那个装置。”
+> 
+> ——《感谢你抽烟》（2005）
+
+所有 Java 开发者的数量大约是中高级 Java 开发者的 10 倍。因此，小小的调整就能让文章的受众扩大一个数量级。
+
+当然，不是每篇文章都能无限扩大受众。无论你怎么解释背景知识，你的会计师读者也不会读关于 Java 内存泄漏的文章。关键不是讨好所有读者，而是发现扩大受众的机会。
+
+### 示例：《我是如何偷走你的Siacoin的》
+
+我早期的一篇成功文章是[《我是如何偷走你的 Siacoin 的》](https://mtlynch.io/stole-siacoins/)，讲的是我偷了一个 Reddit 用户的加密货币的故事（出于正当理由）。
+
+起初，我以为只有几百个关注小众加密货币 Siacoin 的人会对这个故事感兴趣。但编辑时我发现，即使不了解 Siacoin 也能看懂这个故事。于是我稍作修改，让它对从未听说过 Siacoin 的加密货币爱好者也有吸引力。
+
+后来，我意识到这个故事甚至可以向对加密货币一无所知的人解释。我调整术语，使用“钱包”“密码”等普通人能懂的词，避免“区块链”“默克尔树”等专业术语。
+
+这篇文章成了我的第一个爆款。它不仅是[/r/siacoin](https://www.reddit.com/r/siacoin/comments/6hm2rt/how_i_stole_your_siacoin/)子版块有史以来最火的帖子，还在更大的[/r/cryptocurrency](https://www.reddit.com/r/CryptoCurrency/comments/6hm4w0/how_i_stole_your_siacoin/)子版块登顶。它甚至登上了[Hacker News](https://news.ycombinator.com/item?id=14568558)首页，尽管那里的读者通常对加密货币话题不友好。
+
+## 规划传播路径
+
+假设你写了一篇史上最棒的Python入门教程。你五岁的侄子和 80 岁的牙医都能轻松愉快地学完，每个读者最后都成了 Python 核心贡献者。
+
+坏消息是：没人会读你的 Python 教程。
+
+“胡说！”你喊道。“每年有成千上万的开发者学习Python。为什么我 objectively 超棒的教程不会火？”
+
+那么，想想你点击发布后会发生什么？人们怎么找到你的文章？
+
+你可能会说：谷歌。
+
+没错，谷歌会索引你的教程，用它的神秘算法识别出你文章的高质量。很快，你的教程就会成为`python tutorial`的 top 结果。
+
+但这是不可能的，因为已经有太多Python教程来自谷歌更青睐的网站。你的文章连第一页都进不了。
+[![谷歌Python搜索结果](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/work/google-python-results.webp)](https://refactoringenglish.com/chapters/write-blog-posts-developers-read/google-python-results.webp)谷歌Python搜索结果
+
+谷歌Python搜索结果
+
+新博客文章几乎不可能在`python tutorial`的谷歌搜索结果中排名靠前。
+
+好吧，那你把Python教程发到Reddit。[/r/python](https://www.reddit.com/r/Python/)子版块有超过130万订阅者。哪怕5%的人读你的文章，也是巨大的受众：
+
+[![/r/python订阅者](https://refactoringenglish.com/chapters/write-blog-posts-developers-read/r-python-subscribers.webp)](https://refactoringenglish.com/chapters/write-blog-posts-developers-read/r-python-subscribers.webp)/r/python订阅者图
+
+/r/python子版块有超过130万订阅者。
+
+糟糕！/r/python只接受纯文本帖子，不接受外部链接，所以你没法发教程。
+
+[![/r/python纯文本帖子](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/work/r-python-text-posts.webp)](https://refactoringenglish.com/chapters/write-blog-posts-developers-read/r-python-text-posts.webp)/r/python纯文本帖子
+
+/r/python子版块禁用了提交外部链接的选项。
+
+好吧，那你发到Hacker News。他们接受任何内容，让用户决定什么有趣。他们肯定会认可你的文章质量！
+
+不，那里也会失败。Hacker News不喜欢教程，尤其是Python这种主流技术的教程。
+
+你可以尝试在[Twitter](https://twitter.com/)、[Bluesky](https://bsky.app/)或[Mastodon](https://joinmastodon.org/)上分享，但除非你已经有大量粉丝，否则很难形成规模效应。
+
+那么，答案是什么？怎么让人们读你的超棒Python教程？
+
+答案是：不要写Python入门教程。
+
+### 你需要一条现实的传播路径
+
+如果你想让人读你的博客，就要选择有明确传播路径的主题。动笔前，先想想读者会怎么发现你的文章。
+
+**选择文章主题时要问的问题:**
+
+- 通过谷歌搜索找到你的文章现实吗？
+    
+    - 已经有 500 篇同主题文章来自更知名的网站了吗？
+        
+    - 目标读者会搜索哪些关键词？试试这些关键词，看看是否已经有知名网站的相关结果。
+        
+    
+- 如果你打算发到Hacker News或Lobsters这样的聚合网站，[类似文章](https://hn.algolia.com/)在那里成功过吗？
+    
+- 如果你打算发到子版块或小众论坛，有机会成功吗？
+    
+    - 论坛接受博客文章链接吗？
+        
+        - 社区越大，对外部链接和自推广的规定通常越严格。
+            
+        
+    - 类似博客文章在那里成功过吗？
+        
+    - 社区还活跃吗？
+        
+    
+
+最好的策略是给文章多次成功的机会。如果全靠谷歌把你的文章推到顶部，可能要几个月甚至几年才能知道是否成功。如果全靠 Hacker News 或 Reddit 评判文章价值，你会经常心碎。
+
+### 示例：《用 Zig 对 C 应用进行单元测试》
+
+2023年，我写了一篇[《用Zig对C应用进行单元测试》](https://mtlynch.io/notes/zig-unit-test-c/)，讲的是用一种叫 [Zig](https://ziglang.org/) 的新语言测试遗留 C 代码。
+
+动笔前，我知道有几个地方可以分享这篇文章。幸运的是，它们都奏效了：
+
+- Hacker News 对 Zig 内容非常友好，我的文章[登上首页第7位](https://news.ycombinator.com/item?id=38683852)。
+    
+- Lobsters 对 Zig 内容非常友好，我的文章成为[当日热门链接](https://lobste.rs/s/ghttjv/using_zig_unit_test_c_application)。
+    
+- 谷歌把我的文章列为[`zig unit testing c`](https://www.google.com/search?q=zig+unit+testing+c)的 top 结果。
+    
+    - 甚至只是[`zig unit testing`](https://www.google.com/search?q=zig+unit+testing)的 top 结果，因为关于这个话题的文章很少。
+        
+    
+- /r/Zig子版块接受博客文章链接，即使是自推广，我的帖子[登上该子版块榜首](https://www.reddit.com/r/Zig/comments/18lbqi0/using_zig_to_unit_test_a_c_application/)。
+    
+- Ziggit是一个欢迎Zig相关文章的小众论坛，我的帖子在那里获得[1000次浏览](https://ziggit.dev/t/using-zig-to-unit-test-a-c-application/2502)。
+    
+
+## 多用图片
+
+最能提升博客文章效果的改变就是添加图片。
+
+如果你的文章有大段文字，想想是否可以添加照片、截图、图表或示意图来增加视觉吸引力。
+
+- 如果讨论有图形界面的程序，就放截图。
+    
+- 如果讨论应用性能或活跃用户等指标的改进，就放图表。
+    
+- 如果讲服务器过载，就放仪表盘或邮件提醒的截图。
+    
+- 如果解释复杂概念，就画示意图。
+    
+
+我[雇插画师](https://mtlynch.io/how-to-hire-a-cartoonist/)为大多数文章配图（包括这篇），通常每张图支付50-100美元。对于简单的示意图（如[上文](https://refactoringenglish.com/chapters/write-blog-posts-developers-read/#think-one-degree-bigger)的嵌套圆圈），我用免费的[Excalidraw](https://excalidraw.com/)，它是[开源的](https://github.com/excalidraw/excalidraw)。
+
+你也可以用免费图库或 AI 生成的图片，它们比什么都没有强，但比其他任何东西都差，包括糟糕的MS Paint 涂鸦。
+
+![ai-vs-mspaint](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/work/ai-vs-mspaint.webp)
+AI vs MS Paint
+
+即使是糟糕的 MS Paint 涂鸦也比 AI 生成的图片有趣。
+
+## 照顾速读读者
+
+很多读者会先速读文章，再决定是否细读。要在这短暂的速读中吸引他们。
+
+如果读者只看标题和图片，会感兴趣吗？
+
+对速读读者最不友好的就是大段文字：长长的段落没有图片或标题分隔，全是文字。
+
+### 工具：以速读模式查看文章
+
+这里有一个JavaScript [书签工具](https://en.wikipedia.org/wiki/Bookmarklet)，可以让你只看标题和图片预览文章。
+
+把链接拖到浏览器书签栏，点击即可查看文章对速读读者的呈现效果。
+
+### 示例：无聊的结构 vs 有趣的结构
+
+2019年，我写了《端到端测试Web应用：无痛方法》，当时还没考虑结构。
+
+速读这篇文章会让你想读全文吗？  
+![3月30日.gif](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/work/3%E6%9C%8830%E6%97%A5.gif)
+
+
+
+可能不会。标题没有透露太多内容，视觉效果也令人困惑。
+
+再看看我近期的文章《我后悔花4.6万美元重新设计网站》。
+
+![3月30日(1).gif](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/work/3%E6%9C%8830%E6%97%A5(1).gif) 
+
+速读这篇文章时，你仍能看到一个好故事的骨架，有趣的视觉元素也能吸引读者。
+
+其中一篇文章几乎无人问津，另一篇发布第一周就吸引了15万独立读者，成为我最受欢迎的文章之一。你能猜出是哪篇吗？
+
+结束了！文章封面由 [svgshow.cn](https://svgshow.cn/) 提供，如果你想了解我，请访问：[luckysnail.cn](https://www.luckysnail.cn/)
+
+---
+此文自动发布于：<a href="https://github.com/coderPerseus/blog/issues/56" target="_blank">github issues</a>
