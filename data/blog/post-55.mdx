@@ -8,13 +8,13 @@ tags: ["CI/CD","网站部署"]
 
 ## 背景
 
-如果你有使用 vuepress、vitepress、astro 这种文档网站来作为博客然后通过一些云服务厂商的 cos 服务进行部署的需求，那你会发现每次更新完内容后就会需要手动去打包、然后把打包结果放到 cos 服务对应目录下面，如果你有了解 CI/CD，你肯定会想要通过自动化部署来解决问题，还能避免手动误操作导致问题，本着这个想法，我打算尝试一下
+如果你有使用 vuepress、vitepress、astro 这种文档网站来作为博客然后通过一些云服务厂商的 cos 服务进行部署的需求，那你会发现每次更新完内容后就会需要手动去打包、然后把打包结果放到 cos 服务对应目录下面，如果你有了解 `CI/CD`，你肯定会想要通过自动化部署来解决问题，还能避免手动误操作导致问题，本着这个想法，我打算尝试一下
 
 
 
 ## 知识点
 
-在开发之前，让我们先了解一下 [github action](https://docs.github.com/en/actions/about-github-actions/understanding-github-actions) ，它是一个持续集成和持续交付（CI/CD）平台，它的工作原理如下：
+在开发之前，让我们先了解一下 [github action](https://docs.github.com/en/actions/about-github-actions/understanding-github-actions) ，它是一个持续集成和持续交付（`CI/CD`）平台，它的工作原理如下：
 
 1. 基于事件的触发系统
 
@@ -49,7 +49,7 @@ GitHub Actions 工作流由以下几个主要部分组成：
 
 5. 安全凭证管理
 
-GitHub 提供了"Secrets"功能来安全地存储敏感信息（如 API 密钥），可以在工作流中使用 ${{ secrets.SECRET_NAME }} 语法引用。
+GitHub 提供了"Secrets"功能来安全地存储敏感信息（如 API 密钥），可以在工作流中使用 `${{ secrets.SECRET_NAME }}`  语法引用。
 
 ## 开发
 
