@@ -3,10 +3,20 @@ import resumeIcon from '@/assets/products/resume.png';
 import React from 'react';
 import luckySnailBlogIcon from '~/public/logo.png';
 import npmIcon from '~/public/npmIcon.webp';
+import svgShowIcon from '~/public/svgShow.png';
 import { ProjectCard } from './ProjectCard';
 
 export function Projects(): React.ReactElement {
 	const projects: ProjectItem[] = [
+		{
+			id: '5',
+			url: 'https://www.svgshow.cn/',
+			icon: svgShowIcon,
+			name: 'SVG 秀',
+			description:
+				'利用当下最强的 SVG 动画库，轻松将内容转为美观的 SVG 图片，并且可以看到 AI 是如何一步步画出来的',
+			tags: ['个人']
+		},
 		{
 			id: '4',
 			url: 'https://ascii.luckysnail.cn/',
@@ -37,7 +47,7 @@ export function Projects(): React.ReactElement {
 			icon: resumeIcon,
 			name: '老鱼简历',
 			description:
-				'很好用的写简历平台，能够下载 PDF PNG格式的简历，当然也可以分享在线简历链接，支持各种格式文件导入简历，接入了 AI 帮忙快速写简历，还能看到一些实时的求职动态。可以体验一下，如果使用有任何问题，欢迎 联系我',
+				'很好用的写简历平台，能够下载 PDF PNG 格式的简历，当然也可以分享在线简历链接，支持各种格式文件导入简历，接入了 AI 帮忙快速写简历，还能看到一些实时的求职动态。可以体验一下，如果使用有任何问题，欢迎 联系我',
 			tags: ['公司']
 		},
 		{
