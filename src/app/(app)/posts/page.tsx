@@ -1,13 +1,8 @@
 import { Container } from '@/components/Container';
-import { AspectRatio } from '@/components/ui/aspect-ratio';
-import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
-import { allPosts, type Post } from 'contentlayer/generated';
-import dayjs from 'dayjs';
-import Image from 'next/image';
-import Link from 'next/link';
+import { allPosts } from 'contentlayer/generated';
 import CoverSwitch from './CoverSwitch';
-import { Tag } from './TagItem';
+import TimelinePostItem from './TimelinePostItem';
 
 export interface PostItem {
 	title: string;
@@ -19,47 +14,6 @@ export interface PostItem {
 	author: string;
 	cover?: string;
 } // components/Tag.js
-
-function PostCard({ post, showCover }: { post: Post; showCover?: boolean }) {
-	return (
-		<Link
-			href={`/posts/${post.slug}`}
-			className={cn(
-				'text-violet-500 relative dark:text-violet-400',
-				showCover ? 'hover:drop-shadow-2xl' : ' hover:text-violet-700'
-			)}
-		>
-			{showCover && (
-				<AspectRatio
-					ratio={16 / 9}
-					className="bg-muted absolute left-0 top-0 rounded-md overflow-hidden"
-				>
-					<Image
-						unoptimized
-						src={post.cover ?? ''}
-						alt={post.title}
-						fill
-						className=" object-cover"
-					/>
-				</AspectRatio>
-			)}
-			<div className="px-4 py-4 rounded-sm border-b-[1px] border-violet-200 sm:border-none  cursor-pointer">
-				<h2 className="mb-1 text-xl font-medium">
-					<span>{post.title}</span>
-				</h2>
-				<div className="hidden sm:flex flex-wrap mt-2 justify-start  items-center space-x-4 text-sm">
-					<time dateTime={post.date} className=" block text-xs text-gray-600">
-						{dayjs(post.date).format('YYYY-MM-DD')}
-					</time>
-					<Separator orientation="vertical" className="h-5" />
-					{post.tags.map((tag) => (
-						<Tag key={tag}>{tag}</Tag>
-					))}
-				</div>
-			</div>
-		</Link>
-	);
-}
 const title = '我的博客列表 | ';
 const description =
 	'记录在编程学习、工作中遇到的问题。我精心整理为技术博客文章合集，涵盖前端开发、React、Next.js等热门话题。发现实用的开发技巧、最佳实践和行业动态，提升您的开发技能。立即浏览最新文章！';
@@ -104,11 +58,15 @@ export default function Posts() {
 					，偶尔也会记录 <b>其他内容</b>
 				</p>
 			</header>
-			<div className={cn('grid grid-cols-1 gap-4', false ? 'grid-cols-2' : '')}>
+			<ul className="mt-8">
 				{sortedPosts.map((post, idx) => (
-					<PostCard showCover={false} key={idx} post={post} />
+					<TimelinePostItem
+						key={post._id}
+						post={post}
+						isLast={idx === sortedPosts.length - 1}
+					/>
 				))}
-			</div>
+			</ul>
 		</Container>
 	);
 }
