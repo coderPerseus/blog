@@ -1,0 +1,107 @@
+---
+title: 拆巨资让 Claude Code 和 Codex 同时住进了我的终端里
+date: 2025-09-06T16:03:39Z
+slug: post-76
+author: coderPerseus：https://github.com/coderPerseus
+tags: ["AI"]
+---
+
+大家好，我是 luckySnail，已经和 Claude Code 结伴编程将近半年，深刻感受到终端里的 AI Agent 的强大之处，同时也更加坚定我要不断体验最新的 AI 编程产品。这不最近 chatGPT 5 发布，社区里很多人分享了 Codex 已经不输 Claude Code。看着大伙都使用上了，心里也是很着急，于是就使用这月的零花钱直接订阅了 chatGPT 和 Claude Code，我这里买的第三方服务，是共享 chatGPT pro 和 Claude Code Max 20x 。也就是当前最贵的两档大模型会员。
+
+![](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/typora/1755945845142-38ca9bc6-fec2-4d58-8ad6-c18de551de6a.png)
+
+无论是我个人的使用，还是社区大佬的分享，都承认了一个事实就是：**AI 目前写代码的能力已经超过了 99% 开发者**！注意这里说是写代码的能力，基于这个认知，让我们看看当下最强大的 AI 的编程能力
+
+## 实战经验
+
+目前我已经使用 Claude Code 几千刀 token 了！下面分享我使用过程中，总结的一些实用经验！如果你还没有体验过 AI Agent CLI 工具，可以看我上一篇文章：[[使用两个月的 Claude Code ，总结下我的最佳实践](https://mp.weixin.qq.com/s/8oHjqqxHOLwSdeF71Gr30A)](https://mp.weixin.qq.com/s/8oHjqqxHOLwSdeF71Gr30A)
+
+![](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/typora/1755945315793-117051c7-321b-40d9-828c-c537e61f95ee.png)
+
+### 常用话术
+
+如果把 claude code 和 codex 当做招聘来的两个实习生，那给这两个实习生交代工作肯定是花点心思能得到更好的效果，对于 claude code：
+
+1. 引导使用 todo：在 prompt 中告诉它制定 todo 进行实施
+2. 引导深入思考：在 prompt 中添加 ultrathink 
+
+对于 Codex：
+
+1. 使用更宽泛的话术：codex 在系统设计和解决难题上比较厉害，这里不告诉它具体如何实现，让它自己去实现，有时候能得到更好的结果
+2. 引导它如何工作：例如：使用网络搜索工具进行搜索；使用 git 命令进行查看暂存区代码；不要运行 pnpm lint 进行校验效果；等等
+
+除了上面，还可以参考官方教程：
+
+1. [[https://docs.anthropic.com/zh-CN/docs/claude-code/](https://docs.anthropic.com/zh-CN/docs/claude-code/common-workflows#%E4%BD%BF%E7%94%A8%E6%89%A9%E5%B1%95%E6%80%9D%E8%80%83)](https://docs.anthropic.com/zh-CN/docs/claude-code/common-workflows#%E4%BD%BF%E7%94%A8%E6%89%A9%E5%B1%95%E6%80%9D%E8%80%83)
+2. [https://developers.openai.com/codex/prompting](https://developers.openai.com/codex/prompting)
+
+### 读代码和查找代码的神器
+
+日常开发中，70% 的需求基本上都是基于已有的代码基础上进行添加，修改。那么先理解当前的逻辑是至关重要的，不先熟悉已有的逻辑，直接开发很容易导致历史逻辑出现问题！这时候，可以在自己阅读前，先询问 AI 相关代码的逻辑，数据流等等问题。对模块先有大致了解，然后再开始阅读源码，我自己感觉是极大的提高了我的效率
+
+除了读代码，查找 xx  功能的实现代码位置也是很高频的需求，正常情况下，我们需要先通过路由或者其他方式找到相关的位置，然后继续找到想要看的代码部分，但是现在直接询问 AI ，它能快速精准找到对应的代码位置，比自己找快多了！而且它还会向你解释对应的代码
+
+### bug 修复神器
+
+claude code 和 codex 目前最擅长的估计就是 fix bug 了，在提供精准的报错信息和对应代码上下文后，90% 它们都可以顺利修复 bug，如果 claude code 修复不了，那就 codex 来，他俩总有一个能解决问题
+
+### 让 claude code 和 codex 合作
+
+很多时候，claude code 会突然变傻，解决不了遇到的问题，codex 也是一样，例如：当我让 codex 修复一个导入问题，它结果使用 python 进行代码重构：
+
+![](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/typora/1757060005164-e7eee01c-2f8c-4bd1-9033-9bce876bf2c2.png)
+
+然后我把问题交给 claude code，它很快就帮我修复了问题：
+
+![](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/typora/1757060031451-c1cf635b-2a89-48e2-a2c7-4686def31ba4.png)
+
+### 结合强大的 Git
+
+Git 是很强大的代码管理工具，在使用 claude code 和 codex 这种工具的时候它变得比其他时候更加重要，我日常使用会每一次提问前都保证先把代码存入暂存区，保证工作目录是空的，这样方便查看本次 AI 做了哪些改动，并且还可以让 AI 快速进行代码 review：“检查当前工作目录的代码是否有问题？”。并且每次都可以提交一个 commit ，这样也方便快速回退
+
+### 互相 review 代码
+
+当我使用 Claude Code 开发完成一个能力后，我会让 Codex 来 review 暂存区的代码，让其给出一些意见，这样能极大的减少 bug 的产生，下面是我的提示词：
+
+```bash
+使用 Git 查看当前暂存区的代码，根据 [Google code review guide](https://google.github.io/eng-practices/review/reviewer/standard.html) 来 review code 指出代码的问题并给出建议
+```
+
+随着 AI 越来越多代替我们写代码，代码 review 能力也变得越好越重要了！不知道如何 review ，可以看 [Google code review guide](https://google.github.io/eng-practices/review/reviewer/standard.html)
+
+### 让 AI 进行逆向分析源码
+
+目前客户端代码基本上都是通过混淆和压缩来保证源码不被泄露，但是有了 claude code 后，直接在压缩代码文件里面打开 claude code 或者 codex ，然后直接询问：“解析源码，帮我找到所有关于 xxx 的代码，查看 xxx 能力是如何实现的，并给出对应逆向的 js 实现源码”
+
+### 为窗口设置别名
+
+![](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/typora/1756709690812-c886a8eb-33c7-4857-b515-2672cb5e822d.png)
+
+VSCode 或者 Cursor 是可以为窗口创建别名的，很多时候，我们需要打开多个对话窗口，或者同时问 Claude Code 和 Codex ，这时候为窗口命名能够让我们快速找到对应的窗口
+
+### 做减法变得很重要
+
+AI 返回的内容总是更多的，并且会做一些不需要的能力，但是代码肯定是越少越好，每一行多余的代码都会增加系统复杂度和维护成本，所以在 AI 生成结果之后，我一般会将它添加的多余的代码都删掉，AI 经常犯的错误如下：
+
+1. 系统已经有的能力，但是 AI 不知道，它又重复写了一个
+2. 可以基于当前已有的逻辑进行开发，但是它从 0 开发
+3. 可以抽离为公共方法，逻辑的地方，它写在了业务逻辑里面
+
+### 定期更新文档
+
+claude code 和 codex 都有 /init 命令，它会生成一个项目开发指导文档（CLAUDE.md 、 AGENTS.md），然后会在接下来每一次对话都带上这个上下文。所以非常重要的一点是，如果有开发全局的能力，那么就需要及时更新对应的指导文档，要不然还是使用就的指导文档作为上下文进行回答就会不准确
+
+### MCP
+
+之前一直觉得 MCP 没有什么作用，但是最近团队同事强烈推荐 context7 这个 MCP，我抱着怀疑的态度使用了一下，就再也离不了了！这是一个能够让你的大模型能够访问到最新代码文档的工具。因为日常 AI 在回答的时候经常会给出旧的代码，从而导致一些问题，但是使用这个 MCP 后它会自动搜索最新的文档资料作为上下文，来保证返回代码是最新的实现方式，使用方法也很简单，在 prompt 中添加上：使用 context 7 访问 xxx 最新官方文档，参考对应的文档进行开发。关于如何使用更详细，查看文档：[https://github.com/upstash/context7](https://github.com/upstash/context7)
+
+## claude code VS codex
+
+现在让我们总结对比一下这两款终端 CLI 工具，目前无论从使用体验还是功能支持上 claude code 都是更胜一筹，但是 codex 目前在解决问题方面已经不输 claude code。所以对于有条件的，两个都订阅一下，在 claude code 解决不了问题的时候可以尝试一下 codex 。如果你需要服务，可以联系我
+
+## 让我们下次见
+
+不知不觉已经使用 Claude Code 1000 + 刀了，虽然跟刘小排那种一天 1000 刀的没法比，但是它真的物超所值，如果让我分享如何进行 AI Coding，秘诀可能只有一个，那就是先用起来吧！就像吕子乔经典语录说的一样：“**<font style="color:rgb(51, 51, 51);">管他呢！上去啊！火车是朝前开的，去哪不重要，重要的是窗外的风景。</font>**”
+
+---
+此文自动发布于：<a href="https://github.com/coderPerseus/blog/issues/76" target="_blank">github issues</a>
