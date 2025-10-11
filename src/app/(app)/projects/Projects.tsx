@@ -1,7 +1,9 @@
 import codeCopyIcon from '@/assets/products/codecopy.png';
 import resumeIcon from '@/assets/products/resume.png';
 import React from 'react';
+import easykolIcon from '~/public/easykol.png';
 import luckySnailBlogIcon from '~/public/logo.png';
+import neovateCodeIcon from '~/public/neovateCode.png';
 import npmIcon from '~/public/npmIcon.webp';
 import svgShowIcon from '~/public/svgShow.png';
 import { ProjectCard } from './ProjectCard';
@@ -9,7 +11,24 @@ import { ProjectCard } from './ProjectCard';
 export function Projects(): React.ReactElement {
 	const projects: ProjectItem[] = [
 		{
-			id: '5',
+			id: '8',
+			url: 'https://easykol.com/',
+			icon: easykolIcon,
+			name: 'Easykol',
+			description:
+				'最好用的海外营销工具，帮你快速找到你想要的红人，并且内置邮件模板和批量发邮件建联。支持 Tiktok，instagram，youtube，小红书，抖音等主流平台，无论性价比还是质量都遥遥领先行业内竞品产品',
+			tags: ['公司']
+		},
+		{
+			id: '7',
+			url: 'https://neovateai.dev/',
+			icon: neovateCodeIcon,
+			name: 'Neovate Code',
+			description: `Neovate ['niːəʊveɪt] Code is a code agent to enhance your development. You can use it to generate code, fix bugs, review code, add tests, and more. You can run it in interactive mode or headless mode.`,
+			tags: ['开源']
+		},
+		{
+			id: '6',
 			url: 'https://www.svgshow.cn/',
 			icon: svgShowIcon,
 			name: 'SVG 秀',
@@ -18,7 +37,7 @@ export function Projects(): React.ReactElement {
 			tags: ['个人']
 		},
 		{
-			id: '4',
+			id: '5',
 			url: 'https://ascii.luckysnail.cn/',
 			icon: luckySnailBlogIcon,
 			name: 'ASCII 字符生成器',
