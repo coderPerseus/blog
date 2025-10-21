@@ -13,6 +13,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Tag } from '../TagItem';
 import Toc from '../Toc';
+import '@/style/post-content.css';
 
 const variantStyles = {
 	primary:
@@ -103,7 +104,7 @@ const Page = ({ params }: { params: TypeParams }) => {
 								{post.cover && (
 									<AspectRatio
 										ratio={16 / 9}
-										className="bg-muted absolute left-0 top-0 rounded-md overflow-hidden"
+										className="bg-muted rounded-md overflow-hidden"
 									>
 										<Image
 											src={post.cover}

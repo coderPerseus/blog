@@ -1,0 +1,153 @@
+/* Post content typography and layout */
+:root {
+  --post-max-width: 72ch; /* target 60–75 characters */
+  --post-font-size: clamp(0.98rem, 0.94rem + 0.25vw, 1.08rem);
+  --post-line-height: 1.75; /* 1.7–1.8 */
+  --post-paragraph-spacing: 1em;
+  --post-heading-line-height: 1.2;
+  --post-h1-size: clamp(1.875rem, 1.35rem + 1.8vw, 2.5rem);
+  --post-h2-size: clamp(1.5rem, 1.2rem + 1.2vw, 2rem);
+  --post-h3-size: clamp(1.25rem, 1.05rem + 0.8vw, 1.5rem);
+}
+
+/* 侧边栏断点由页面的 lg: 控制，这里仅处理正文宽度与排版 */
+.rich-text-viewer {
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+  max-width: min(var(--post-max-width), 100%); /* 700–760px 以内，同时控制字符数 */
+  font-size: var(--post-font-size);
+  line-height: var(--post-line-height);
+  color: hsl(var(--foreground));
+}
+
+/* Headings */
+.rich-text-viewer h1,
+.rich-text-viewer h2,
+.rich-text-viewer h3,
+.rich-text-viewer h4,
+.rich-text-viewer h5,
+.rich-text-viewer h6 {
+  font-weight: 700;
+  line-height: var(--post-heading-line-height);
+  margin-top: 1.25em;
+  margin-bottom: 0.6em;
+}
+.rich-text-viewer h1 { font-size: var(--post-h1-size); }
+.rich-text-viewer h2 { font-size: var(--post-h2-size); }
+.rich-text-viewer h3 { font-size: var(--post-h3-size); }
+
+/* Paragraphs */
+.rich-text-viewer p {
+  margin: 0 0 var(--post-paragraph-spacing);
+}
+
+/* Lists */
+.rich-text-viewer ul,
+.rich-text-viewer ol {
+  padding-left: 1.25rem;
+  margin: 0 0 var(--post-paragraph-spacing);
+}
+.rich-text-viewer ul { list-style: disc outside; }
+.rich-text-viewer ol { list-style: decimal outside; }
+.rich-text-viewer li { margin: 0.25em 0; }
+.rich-text-viewer li > ul,
+.rich-text-viewer li > ol { margin-top: 0.25em; }
+
+/* Blockquotes */
+.rich-text-viewer blockquote {
+  border-left: 3px solid hsl(var(--border));
+  color: hsl(var(--muted-foreground));
+  padding-left: 1rem;
+  margin: 1.2em 0;
+}
+.dark .rich-text-viewer blockquote {
+  border-left-color: hsl(var(--border));
+}
+
+/* Horizontal rule */
+.rich-text-viewer hr {
+  border: 0;
+  border-top: 1px solid hsl(var(--border));
+  margin: 2em 0;
+}
+
+/* Links and focus states */
+.rich-text-viewer a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.rich-text-viewer a:focus-visible,
+.rich-text-viewer button:focus-visible,
+.rich-text-viewer [tabindex]:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Media */
+.rich-text-viewer img,
+.rich-text-viewer video,
+.rich-text-viewer iframe {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.375rem; /* rounded-md */
+}
+
+/* Tables: horizontal scroll on small screens */
+.rich-text-viewer table {
+  width: 100%;
+  border-collapse: collapse;
+  display: block;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.rich-text-viewer thead { background: hsl(var(--muted)); }
+.dark .rich-text-viewer thead { background: color-mix(in oklab, hsl(var(--muted)) 60%, transparent); }
+.rich-text-viewer th,
+.rich-text-viewer td {
+  border: 1px solid hsl(var(--border));
+  padding: 0.5rem;
+  text-align: left;
+}
+
+/* Code blocks */
+.rich-text-viewer pre {
+  background: hsl(var(--muted));
+  color: hsl(var(--foreground));
+  padding: 1rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 1.2em 0;
+}
+.rich-text-viewer pre code {
+  font-size: 0.9em;
+  line-height: 1.6;
+}
+/* Inline code */
+.rich-text-viewer :not(pre) > code {
+  background: hsl(var(--muted));
+  border: 1px solid hsl(var(--border));
+  padding: 0.15em 0.4em;
+  border-radius: 0.3em;
+}
+
+/* Figures */
+.rich-text-viewer figure { margin: 1.2em 0; }
+.rich-text-viewer figcaption {
+  color: hsl(var(--muted-foreground));
+  text-align: center;
+  margin-top: 0.5rem;
+  font-size: 0.9em;
+}
+
+/* Small screens adjustments */
+@media (max-width: 768px) {
+  .rich-text-viewer pre { padding: 0.75rem; }
+  .rich-text-viewer pre code { font-size: 0.85em; }
+}
+
+/* Ensure no unintended horizontal scroll from content */
+.rich-text-viewer > * { max-width: 100%; }
