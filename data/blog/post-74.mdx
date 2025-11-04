@@ -1,0 +1,126 @@
+---
+title: 使用两个月的 Claude Code ，总结下我的最佳实践
+date: 2025-07-20T08:59:20Z
+slug: post-74
+author: coderPerseus：https://github.com/coderPerseus
+tags: ["AI","教程"]
+---
+
+大家好，我是 luckySnail，已经使用 Claude Code 两个多月了！感谢公司的支持，让我用上了目前编程最强的工具，有了 Claude Code 后，我的开发效率真的翻倍了！Claude Code 是一款集成在终端的编程助手（CLI 工具），使用了 Anthropic 公司自家最强的 sonnet 4 和 Opus 4  大模型。下面让我们一起来看看如何使用它！我会按照下面顺序介绍，让你快速入门 Claude Code：
+
+- 如何安装
+- 基础入门
+- 进阶使用
+- 项目实战经验
+- 总结和参考资料
+
+## 安装
+
+> 你需要安装 nodejs > 18
+
+```bash
+# install
+npm i -g @anthropic-ai/claude-code
+# valid install 
+claude -v
+```
+
+如果输出版本号，就代表安装成功了！下面进行使用（需要自己备好工具，否则运行 claude 会报错 403）
+
+## 基础入门
+
+你可以把 claude code 当做你终端中的 AI 编程助手，使用它的方式是进入到你的项目下，或者新建一个项目文件夹，然后进入终端输入（当你第一次输入 claude 的时候，它会安装对应的插件，更好的进行辅助编程）：
+
+```bash
+claude 
+# 你也可以输入 claude xxx ，就是：claude [prompt] - 直接发送提示词给 Claude
+```
+
+下面来看看这个 CLI 工具常用的命令：
+
+```bash
+update：更新 claude cli 到最新
+mcp：配置管理 MCP 服务
+--dangerously-skip-permissions：自动确认，不会在执行一些命令的时候进行确认提示，适合执行长时间任务的时候启用，但是是一个危险操作
+--add-dir <directories...> - 添加允许工具访问的额外目录
+-c, --continue - 继续最近的对话
+-r, --resume [sessionId] - 恢复对话 - 可提供会话 ID 或交互式选择要恢复的对话
+```
+
+当我们启动 claude 后也有很多命令和快捷键可以使用：
+
+```bash
+# 退出当前执行，当我们执行一个命令的时候希望终止，可以使用它
+ESC
+# 退出 Claude Code
+command + c (两次)
+# 初始化项目，建立项目索引，生成 CLAUDE.md
+/init
+# 引用文件 (@ + 文件名)，将当前文件添加到上下文
+@xxx
+# 添加记忆 ，输入 # 然后添加你的记忆内容，可以配置为项目 /  用户记忆
+`# xxx`
+# 清除上下文
+/clear
+# 压缩上下文
+/compact
+# claude 配置，可以配置主题，是否使用 to-dolist，是否提示，使用大模型选择等等
+/config
+# 查看花费
+/cost
+# 查看状态，包含版本，模型，工作目录，
+/status 
+
+```
+
+## 进阶用法
+
+```bash
+# 管理 MCP
+/mcp
+# 管理记忆
+/memory
+#  Hooks（钩子）系统，允许您在 Claude Code 处理过程中的特定时刻执行自定义的 shell 命令。
+/hooks
+# 恢复对话
+/resume
+# 配置别名
+alias cc="claude --dangerously-skip-permissions"
+```
+
+## 项目实战经验
+
+下面是我使用 Claude Code（简称 cc） 在生产开发中的一些经验！
+
+1. cc 启动的时候会提示安装对应的编辑器插件，安装后 cc 会感知到当前打开的目录，快速将上下文加入的 cc，还能直接在代码中查看变更
+2. 放心使用 claude --dangerously-skip-permissions ，因为 cc 再安全方面做了很大的努力
+3. 每完成一个小的需求后，都应该提交一次 Git，准确来说应该每结束一次对话，都要将变更存储到 Git 暂存区，保证工作区干净，这样当 cc 的更新不对，我们可以很快回退
+4. review code：cc 有很强的 Git 能力，我们可以让他使用 Git diff 来进行代码检查
+5. 复杂需求拆解确认再开发，虽然 cc 有 todo 的能力，但是它会制定 todo 就执行 todo，这在复杂需求的时候不适用，复杂需求可以让他先制定计划找我确认沟通再进行下一步，这大大减少方向错误导致的问题
+6. 搜索网络和深度思考，告诉它进行搜索网络，它会先去搜索资料。末尾加上 ultrathink 它会深度思考
+7. 启动多个子任务并行，cc 是有能力自己并行启动多个 subagents 的，不用第三方工具，只需要加个咒语：YOU MUST use subagents in parallel to speed up the progress. 
+8. 清除上下文，很多时候，我们提问的新的问题和之前没有联系，这时候应该运行 /clear 来清除上下文，否认目前的上下文可能会影响新的问题的回答结果，没一个新的问题都应该清除上下文或者创建新的对话
+9. 如果 cc 两次做不好的事情，就不要再让它来了，自己动手做吧！
+10. cc 有很好的记忆系统，如果你要什么需要针对项目 或者对所有项目的规则，你都可以使用 /memory 记录
+11. cc 不仅是帮你更好的完成工作，在帮助学习方面上也是非常的实用，除了学习，你还可以脑洞大开的让他帮你整理文件夹，搜索网络内容并整理，写文章等等
+12. npx ccusage 能让你看到你使用量，从而知道你是不是亏了！对了，尽可能使用 Opus 来获取最佳开发体验
+
+总之，cc 是一个强大的 CLI 工具，能够调用超多命令来帮助它完成各种任务。在我看来它更像是一个武林高手，适合解决比较困难的问题，简单的问题可以使用 Cursor，通过 Cursor 的流畅 Tab 能力 + Claude Code 强大的复杂问题解决能力，能够极大提高我们的开发效率。随着大模型能力提升，AI Coding 工具能力会越来越强，我们不得不每天都问自己：“如果编写代码不再是难题，你的竞争力在哪呢？”
+
+
+
+## 参考
+
+1. claude code 逆向研究：https://github.com/shareAI-lab/analysis_claude_code
+2. claude code 指南：https://github.com/zebbern/claude-code-guide
+3. command：https://claude.ai/public/artifacts/e2725e41-cca5-48e5-9c15-6eab92012e75
+4. 官方指南：https://docs.anthropic.com/zh-CN/docs/intro
+
+
+
+
+
+
+
+---
+此文自动发布于：<a href="https://github.com/coderPerseus/blog/issues/74" target="_blank">github issues</a>
