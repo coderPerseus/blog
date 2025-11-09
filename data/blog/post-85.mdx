@@ -13,14 +13,21 @@ tags: ["AI","全栈开发"]
 leader 在交给我任务的时候，就把需求文档给我了！大致看了一下是一个简单的用户权限管理 + 问卷收集 + 标签使用管理的系统，可以说是最常见的管理系统，确认了业务流程后，我简单梳理了一下需求，方便我更快更好的开发
 
 客户：
+
 - 通过运营分享的链接，填写问卷
+
 运营：
+
 - 创建表单收集链接（携带自己的用户 id）
 - 将客户填写的问卷完成，然后将状态扭转到财务
 - 可以给问卷打标签
+
 财务
+
 - 根据问卷进行确认信息进行驳回（返回给运营），或者打款（完成）
+
 管理员
+
 - 可以查看这些所有信息
 - 可以管理问卷，标签，用户
 
@@ -112,15 +119,18 @@ payout_status： 	wait_sure, pendingPayment, paid, reject
 1. 我对 supabase  不是很熟悉，害怕自己无法能在短时间实现需求
 2. 这个业务是希望国内用户可以调通后端服务的接口，但是 supabase 的服务国内肯定访问不了
 最终导致我打算自己使用 honojs 更快的进行接口开发，来提供后端接口服务。开发完成后可以将服务部署在任何位置
-首先就是参考： https://supabase.com/docs/guides/getting-started/quickstarts/hono 搭建出后端项目。搭建完成项目后，就启动 Codex，如果你在使用 Claude Code 或者 Cursor 也可以使用你自己的 AI 编程工具
+首先就是参考： `https://supabase.com/docs/guides/getting-started/quickstarts/hono`  搭建出后端项目。搭建完成项目后，就启动 Codex，如果你在使用 Claude Code 或者 Cursor 也可以使用你自己的 AI 编程工具
 第一步：初始化项目和初始化数据库
 运行 codex 的 `/init`，生成 `AGENT.md`  ，然后让AI 来帮我们安装 supabase CLI ，提示词如下 ：
+
 ```bash
 参考 https://supabase.com/docs/guides/local-development ，文档，安装 supabase cli 到当前电脑
 ---
 等待安装完成后 supabase --version 进行校验
 ```
+
 然后我们使用 supabase 先连接上我们在线的 supabase 项目（这里你应该已经创建好你的项目了），然后进行初始化数据库，有了 CLI 之后我们就不需要在 web 端一个个创建数据库表，直接使用 CLI 生成即可，它还会生成对应的迁移记录，在 `CI / CD`  的时候这非常有用
+
 ```bash
 # CLI 和你的在线项目关联起来 SUPABASE_URL：https://your_project_ref.supabase.co
 supabase link --project-ref your_project_ref
@@ -142,7 +152,9 @@ supabase db push
 # - 自动记录迁移历史。
 # 验证结果： supabase db pull。 会把最新数据库结构拉回来。
 ```
+
 第二步：配置环境变量，并验证是否成功连接上 Supabase
+
 ```
 # Get your keys at https://supabase.com/dashboard/project/_/settings/api
 SUPABASE_URL=xxx
@@ -156,6 +168,7 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 ![image.png](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/typora/20251104133410.png)
 
 我们可以看到对应的接口文档，下面就在本地使用 supabase 提供的包来开发对应的接口，首先创建一个 `/user` 接口，这个接口很简单，就是获取请求的鉴权信息，调 supabase 的 auth 服务，返回用户信息
+
 ```bash
  app.get('/user', async (c) => {
     const supabase = getSupabase(c);
@@ -173,6 +186,7 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
     });
   });
 ```
+
 如果这个接口调通了，下面就可以让 AI 进行疯狂的接口开发了！所有接口大体逻辑基本相同，都是权限校验 => 数据处理 => 返回数据和状态，下面给一个示例的提示词：
 
 ```bash
@@ -187,7 +201,9 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 ```bash
 基于当前的 payout_requests 表相关的接口 ，开发对应的页面，使用 ant design 的 list 组件展示数据，最后面有一列操作栏，展示：修改，删除，注意删除按钮仅仅运营和管理员可见，还需要一个设置状态的下拉框，状态枚举有三个值，你需要创建一个常量保持，并生成对应中文展示状态
 ```
+
 和后端一样，我负责代码 review  + 验证效果，这里需要注意的是，你需要告诉你的 AI 已经完成的后端代码，这样它才能够更好的工作
+
 ### 部署上线
 
 当我们本地开发测试完成后，就可以上线我们的服务了！后端是 honojs 的服务，是可以轻松进行部署到 cloudflare，vercel 等平台。如果你要部署到自己的服务器也是非常简单，安装一个 node 环境即可。
