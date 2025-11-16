@@ -4,22 +4,12 @@
         <description><![CDATA[我是幸运的蜗牛，一名充满热情的前端开发工程师。我热衷于探索和体验最新技术，特别是人工智能（AI），并在日常工作中去使用它们，来提升我的工作效率。我的目标是积极参与开源社区，为开源项目贡献自己的力量。正如我的名字，我相信越努力，越幸运]]></description>
         <link>https://luckysnail.cn</link>
         <generator>RSS for Node</generator>
-        <lastBuildDate>Tue, 14 Oct 2025 03:07:34 GMT</lastBuildDate>
+        <lastBuildDate>Tue, 21 Oct 2025 07:29:42 GMT</lastBuildDate>
         <atom:link href="https://luckysnail.cn/feed.xml" rel="self" type="application/rss+xml"/>
-        <item>
-            <title><![CDATA[Next.js 项目太坑了，一个简单的样式库，就把项目玩坏了]]></title>
-            <link>https://luckysnail.cn/posts/post-10</link>
-            <guid isPermaLink="true">https://luckysnail.cn/posts/post-10</guid>
-        </item>
         <item>
             <title><![CDATA[如何把这个 blog 项目，部署在自己的服务器上]]></title>
             <link>https://luckysnail.cn/posts/post-11</link>
             <guid isPermaLink="true">https://luckysnail.cn/posts/post-11</guid>
-        </item>
-        <item>
-            <title><![CDATA[那些优秀的程序员和他们的个人 blog]]></title>
-            <link>https://luckysnail.cn/posts/post-14</link>
-            <guid isPermaLink="true">https://luckysnail.cn/posts/post-14</guid>
         </item>
         <item>
             <title><![CDATA[阿里云 centos 服务器，使用宝塔 + webHook 自动同步代码，构建部署]]></title>
@@ -27,14 +17,24 @@
             <guid isPermaLink="true">https://luckysnail.cn/posts/post-12</guid>
         </item>
         <item>
+            <title><![CDATA[Next.js 项目太坑了，一个简单的样式库，就把项目玩坏了]]></title>
+            <link>https://luckysnail.cn/posts/post-10</link>
+            <guid isPermaLink="true">https://luckysnail.cn/posts/post-10</guid>
+        </item>
+        <item>
             <title><![CDATA[纯前端实现超大图片超快稳定压缩]]></title>
             <link>https://luckysnail.cn/posts/post-13</link>
             <guid isPermaLink="true">https://luckysnail.cn/posts/post-13</guid>
         </item>
         <item>
-            <title><![CDATA[css 样式污染几种解决方案]]></title>
-            <link>https://luckysnail.cn/posts/post-17</link>
-            <guid isPermaLink="true">https://luckysnail.cn/posts/post-17</guid>
+            <title><![CDATA[那些优秀的程序员和他们的个人 blog]]></title>
+            <link>https://luckysnail.cn/posts/post-14</link>
+            <guid isPermaLink="true">https://luckysnail.cn/posts/post-14</guid>
+        </item>
+        <item>
+            <title><![CDATA[使用 View Transitions API 实现全页面主题切换动画]]></title>
+            <link>https://luckysnail.cn/posts/post-15</link>
+            <guid isPermaLink="true">https://luckysnail.cn/posts/post-15</guid>
         </item>
         <item>
             <title><![CDATA[Next.js 14 项目踩坑日志（企业级项目）]]></title>
@@ -42,14 +42,14 @@
             <guid isPermaLink="true">https://luckysnail.cn/posts/post-16</guid>
         </item>
         <item>
-            <title><![CDATA[LLM RAG （大语言模型检索增强生成技术）的前世今生]]></title>
-            <link>https://luckysnail.cn/posts/post-21</link>
-            <guid isPermaLink="true">https://luckysnail.cn/posts/post-21</guid>
+            <title><![CDATA[css 样式污染几种解决方案]]></title>
+            <link>https://luckysnail.cn/posts/post-17</link>
+            <guid isPermaLink="true">https://luckysnail.cn/posts/post-17</guid>
         </item>
         <item>
-            <title><![CDATA[DOM元素导出图片与PDF：多种方案对比与实现]]></title>
-            <link>https://luckysnail.cn/posts/post-20</link>
-            <guid isPermaLink="true">https://luckysnail.cn/posts/post-20</guid>
+            <title><![CDATA[开发经验贴（持久更新）]]></title>
+            <link>https://luckysnail.cn/posts/post-18</link>
+            <guid isPermaLink="true">https://luckysnail.cn/posts/post-18</guid>
         </item>
         <item>
             <title><![CDATA[Taro3 + react 项目如何使用 towxml 在微信小程序渲染和优化 markdown]]></title>
@@ -57,9 +57,14 @@
             <guid isPermaLink="true">https://luckysnail.cn/posts/post-19</guid>
         </item>
         <item>
-            <title><![CDATA[开发经验贴（持久更新）]]></title>
-            <link>https://luckysnail.cn/posts/post-18</link>
-            <guid isPermaLink="true">https://luckysnail.cn/posts/post-18</guid>
+            <title><![CDATA[DOM元素导出图片与PDF：多种方案对比与实现]]></title>
+            <link>https://luckysnail.cn/posts/post-20</link>
+            <guid isPermaLink="true">https://luckysnail.cn/posts/post-20</guid>
+        </item>
+        <item>
+            <title><![CDATA[LLM RAG （大语言模型检索增强生成技术）的前世今生]]></title>
+            <link>https://luckysnail.cn/posts/post-21</link>
+            <guid isPermaLink="true">https://luckysnail.cn/posts/post-21</guid>
         </item>
         <item>
             <title><![CDATA[webStorm 快速入门上手开发]]></title>
@@ -70,6 +75,11 @@
             <title><![CDATA[JS 中的事件循环 - 懂前端的都知道这里的门道有多深！]]></title>
             <link>https://luckysnail.cn/posts/post-23</link>
             <guid isPermaLink="true">https://luckysnail.cn/posts/post-23</guid>
+        </item>
+        <item>
+            <title><![CDATA[路由的 hash 模式 和 history 模式的区别是什么？]]></title>
+            <link>https://luckysnail.cn/posts/post-24</link>
+            <guid isPermaLink="true">https://luckysnail.cn/posts/post-24</guid>
         </item>
         <item>
             <title><![CDATA[面向对象编程 vs 函数式编程]]></title>
@@ -87,9 +97,9 @@
             <guid isPermaLink="true">https://luckysnail.cn/posts/post-27</guid>
         </item>
         <item>
-            <title><![CDATA[路由的 hash 模式 和 history 模式的区别是什么？]]></title>
-            <link>https://luckysnail.cn/posts/post-24</link>
-            <guid isPermaLink="true">https://luckysnail.cn/posts/post-24</guid>
+            <title><![CDATA[价值千金的 AI 系统架构图]]></title>
+            <link>https://luckysnail.cn/posts/post-28</link>
+            <guid isPermaLink="true">https://luckysnail.cn/posts/post-28</guid>
         </item>
         <item>
             <title><![CDATA[随笔 - 长期更新]]></title>
@@ -97,14 +107,14 @@
             <guid isPermaLink="true">https://luckysnail.cn/posts/post-29</guid>
         </item>
         <item>
-            <title><![CDATA[喜欢土味视频，但是不好意思看，于是我专门做了个网站]]></title>
-            <link>https://luckysnail.cn/posts/post-32</link>
-            <guid isPermaLink="true">https://luckysnail.cn/posts/post-32</guid>
-        </item>
-        <item>
             <title><![CDATA[cursor ：全新的编程体验]]></title>
             <link>https://luckysnail.cn/posts/post-31</link>
             <guid isPermaLink="true">https://luckysnail.cn/posts/post-31</guid>
+        </item>
+        <item>
+            <title><![CDATA[喜欢土味视频，但是不好意思看，于是我专门做了个网站]]></title>
+            <link>https://luckysnail.cn/posts/post-32</link>
+            <guid isPermaLink="true">https://luckysnail.cn/posts/post-32</guid>
         </item>
         <item>
             <title><![CDATA[实现一个前端开发都使用过的工具]]></title>
@@ -112,19 +122,14 @@
             <guid isPermaLink="true">https://luckysnail.cn/posts/post-33</guid>
         </item>
         <item>
-            <title><![CDATA[价值千金的 AI 系统架构图]]></title>
-            <link>https://luckysnail.cn/posts/post-28</link>
-            <guid isPermaLink="true">https://luckysnail.cn/posts/post-28</guid>
+            <title><![CDATA[使用 turndown 踩坑记录]]></title>
+            <link>https://luckysnail.cn/posts/post-34</link>
+            <guid isPermaLink="true">https://luckysnail.cn/posts/post-34</guid>
         </item>
         <item>
             <title><![CDATA[bytemd 中如何实现图片懒加载]]></title>
             <link>https://luckysnail.cn/posts/post-35</link>
             <guid isPermaLink="true">https://luckysnail.cn/posts/post-35</guid>
-        </item>
-        <item>
-            <title><![CDATA[使用 turndown 踩坑记录]]></title>
-            <link>https://luckysnail.cn/posts/post-34</link>
-            <guid isPermaLink="true">https://luckysnail.cn/posts/post-34</guid>
         </item>
         <item>
             <title><![CDATA[前端正在逐渐被“锈”化]]></title>
@@ -162,14 +167,24 @@
             <guid isPermaLink="true">https://luckysnail.cn/posts/post-41</guid>
         </item>
         <item>
+            <title><![CDATA[职场感悟 （长期更新）]]></title>
+            <link>https://luckysnail.cn/posts/post-42</link>
+            <guid isPermaLink="true">https://luckysnail.cn/posts/post-42</guid>
+        </item>
+        <item>
             <title><![CDATA[再回首，一次很失败的项目负责人体验]]></title>
             <link>https://luckysnail.cn/posts/post-43</link>
             <guid isPermaLink="true">https://luckysnail.cn/posts/post-43</guid>
         </item>
         <item>
-            <title><![CDATA[职场感悟 （长期更新）]]></title>
-            <link>https://luckysnail.cn/posts/post-42</link>
-            <guid isPermaLink="true">https://luckysnail.cn/posts/post-42</guid>
+            <title><![CDATA[使用字节的 TRAE 开发一个简单的 node 服务]]></title>
+            <link>https://luckysnail.cn/posts/post-44</link>
+            <guid isPermaLink="true">https://luckysnail.cn/posts/post-44</guid>
+        </item>
+        <item>
+            <title><![CDATA[搭建前端脚手架（上）]]></title>
+            <link>https://luckysnail.cn/posts/post-45</link>
+            <guid isPermaLink="true">https://luckysnail.cn/posts/post-45</guid>
         </item>
         <item>
             <title><![CDATA[如何订阅 cursor Pro 会员，超实惠，超实用！]]></title>
@@ -192,19 +207,9 @@
             <guid isPermaLink="true">https://luckysnail.cn/posts/post-49</guid>
         </item>
         <item>
-            <title><![CDATA[搭建前端脚手架（上）]]></title>
-            <link>https://luckysnail.cn/posts/post-45</link>
-            <guid isPermaLink="true">https://luckysnail.cn/posts/post-45</guid>
-        </item>
-        <item>
             <title><![CDATA[记录我写的烂代码]]></title>
             <link>https://luckysnail.cn/posts/post-5</link>
             <guid isPermaLink="true">https://luckysnail.cn/posts/post-5</guid>
-        </item>
-        <item>
-            <title><![CDATA[vercel-ai 部分源码阅读，看看如何实现流式请求高并发]]></title>
-            <link>https://luckysnail.cn/posts/post-51</link>
-            <guid isPermaLink="true">https://luckysnail.cn/posts/post-51</guid>
         </item>
         <item>
             <title><![CDATA[通过尤雨溪“围绕Vite的前端统一框架”分享，看未来前端发展趋势]]></title>
@@ -212,14 +217,14 @@
             <guid isPermaLink="true">https://luckysnail.cn/posts/post-50</guid>
         </item>
         <item>
+            <title><![CDATA[vercel-ai 部分源码阅读，看看如何实现流式请求高并发]]></title>
+            <link>https://luckysnail.cn/posts/post-51</link>
+            <guid isPermaLink="true">https://luckysnail.cn/posts/post-51</guid>
+        </item>
+        <item>
             <title><![CDATA[使用Turbopack、Biome、Next.js、Express、Tailwind CSS和ShadCN构建全栈Monorepo项目]]></title>
             <link>https://luckysnail.cn/posts/post-52</link>
             <guid isPermaLink="true">https://luckysnail.cn/posts/post-52</guid>
-        </item>
-        <item>
-            <title><![CDATA[使用字节的 TRAE 开发一个简单的 node 服务]]></title>
-            <link>https://luckysnail.cn/posts/post-44</link>
-            <guid isPermaLink="true">https://luckysnail.cn/posts/post-44</guid>
         </item>
         <item>
             <title><![CDATA[高级程序员给初级开发者的10条建议]]></title>
@@ -227,14 +232,14 @@
             <guid isPermaLink="true">https://luckysnail.cn/posts/post-53</guid>
         </item>
         <item>
-            <title><![CDATA[如何写出受开发者欢迎的技术博客文章]]></title>
-            <link>https://luckysnail.cn/posts/post-56</link>
-            <guid isPermaLink="true">https://luckysnail.cn/posts/post-56</guid>
-        </item>
-        <item>
             <title><![CDATA[基于云cos 服务+ github actions 实现网站自动更新]]></title>
             <link>https://luckysnail.cn/posts/post-55</link>
             <guid isPermaLink="true">https://luckysnail.cn/posts/post-55</guid>
+        </item>
+        <item>
+            <title><![CDATA[如何写出受开发者欢迎的技术博客文章]]></title>
+            <link>https://luckysnail.cn/posts/post-56</link>
+            <guid isPermaLink="true">https://luckysnail.cn/posts/post-56</guid>
         </item>
         <item>
             <title><![CDATA[借助 AI 仅用四天就开发出了月入 $ 12k 的产品]]></title>
@@ -250,6 +255,11 @@
             <title><![CDATA[尤雨溪官宣 antfu 参与 Vite  Devtools ，期待！]]></title>
             <link>https://luckysnail.cn/posts/post-59</link>
             <guid isPermaLink="true">https://luckysnail.cn/posts/post-59</guid>
+        </item>
+        <item>
+            <title><![CDATA[对萝卜快跑的一些观点]]></title>
+            <link>https://luckysnail.cn/posts/post-6</link>
+            <guid isPermaLink="true">https://luckysnail.cn/posts/post-6</guid>
         </item>
         <item>
             <title><![CDATA[最受欢迎的十个 JavaScript 动画库 -2025]]></title>
@@ -272,9 +282,9 @@
             <guid isPermaLink="true">https://luckysnail.cn/posts/post-63</guid>
         </item>
         <item>
-            <title><![CDATA[使用 View Transitions API 实现全页面主题切换动画]]></title>
-            <link>https://luckysnail.cn/posts/post-15</link>
-            <guid isPermaLink="true">https://luckysnail.cn/posts/post-15</guid>
+            <title><![CDATA[程序员学习英语最佳方式被我找到了]]></title>
+            <link>https://luckysnail.cn/posts/post-64</link>
+            <guid isPermaLink="true">https://luckysnail.cn/posts/post-64</guid>
         </item>
         <item>
             <title><![CDATA[github 源码阅读神器 deepwiki，自动生成源码架构图和知识库]]></title>
@@ -292,14 +302,19 @@
             <guid isPermaLink="true">https://luckysnail.cn/posts/post-67</guid>
         </item>
         <item>
+            <title><![CDATA[用了两天 Trae，更愿意为 Cursor 花钱了！]]></title>
+            <link>https://luckysnail.cn/posts/post-68</link>
+            <guid isPermaLink="true">https://luckysnail.cn/posts/post-68</guid>
+        </item>
+        <item>
             <title><![CDATA[Stack Overflow 社区的没落真的是因为 AI 吗？]]></title>
             <link>https://luckysnail.cn/posts/post-69</link>
             <guid isPermaLink="true">https://luckysnail.cn/posts/post-69</guid>
         </item>
         <item>
-            <title><![CDATA[程序员学习英语最佳方式被我找到了]]></title>
-            <link>https://luckysnail.cn/posts/post-64</link>
-            <guid isPermaLink="true">https://luckysnail.cn/posts/post-64</guid>
+            <title><![CDATA[如何使用Next.js和GitHub Issues构建个人博客:从零到上线的完整指南]]></title>
+            <link>https://luckysnail.cn/posts/post-7</link>
+            <guid isPermaLink="true">https://luckysnail.cn/posts/post-7</guid>
         </item>
         <item>
             <title><![CDATA[2025 已经过一半了！聊聊最近的生活]]></title>
@@ -312,14 +327,14 @@
             <guid isPermaLink="true">https://luckysnail.cn/posts/post-71</guid>
         </item>
         <item>
-            <title><![CDATA[20 款AI 编程工具对比，最好用的是这个组合]]></title>
-            <link>https://luckysnail.cn/posts/post-73</link>
-            <guid isPermaLink="true">https://luckysnail.cn/posts/post-73</guid>
-        </item>
-        <item>
             <title><![CDATA[ESLint  + Prettier 太烦人？这次彻底搞定]]></title>
             <link>https://luckysnail.cn/posts/post-72</link>
             <guid isPermaLink="true">https://luckysnail.cn/posts/post-72</guid>
+        </item>
+        <item>
+            <title><![CDATA[20 款AI 编程工具对比，最好用的是这个组合]]></title>
+            <link>https://luckysnail.cn/posts/post-73</link>
+            <guid isPermaLink="true">https://luckysnail.cn/posts/post-73</guid>
         </item>
         <item>
             <title><![CDATA[使用两个月的 Claude Code ，总结下我的最佳实践]]></title>
@@ -327,9 +342,19 @@
             <guid isPermaLink="true">https://luckysnail.cn/posts/post-74</guid>
         </item>
         <item>
+            <title><![CDATA[没写一行代码，让_AI_给我做了一个翻译神器]]></title>
+            <link>https://luckysnail.cn/posts/post-75</link>
+            <guid isPermaLink="true">https://luckysnail.cn/posts/post-75</guid>
+        </item>
+        <item>
             <title><![CDATA[拆巨资让 Claude Code 和 Codex 同时住进了我的终端里]]></title>
             <link>https://luckysnail.cn/posts/post-76</link>
             <guid isPermaLink="true">https://luckysnail.cn/posts/post-76</guid>
+        </item>
+        <item>
+            <title><![CDATA[一分钟带你将 DeepSeek-V3.1-Terminus 接入 Claude Code 和 Codex]]></title>
+            <link>https://luckysnail.cn/posts/post-78</link>
+            <guid isPermaLink="true">https://luckysnail.cn/posts/post-78</guid>
         </item>
         <item>
             <title><![CDATA[一分钟带你将 DeepSeek-V3.1-Terminus 接入Claude Code 和 Codex]]></title>
@@ -340,11 +365,6 @@
             <title><![CDATA[再见 Cursor，我有了新的编程搭子！]]></title>
             <link>https://luckysnail.cn/posts/post-80</link>
             <guid isPermaLink="true">https://luckysnail.cn/posts/post-80</guid>
-        </item>
-        <item>
-            <title><![CDATA[一分钟带你将 DeepSeek-V3.1-Terminus 接入 Claude Code 和 Codex]]></title>
-            <link>https://luckysnail.cn/posts/post-78</link>
-            <guid isPermaLink="true">https://luckysnail.cn/posts/post-78</guid>
         </item>
         <item>
             <title><![CDATA[什么是 Unix 哲学 ？]]></title>
@@ -382,9 +402,9 @@
             <guid isPermaLink="true">https://luckysnail.cn/posts/end-2023</guid>
         </item>
         <item>
-            <title><![CDATA[如何使用Next.js和GitHub Issues构建个人博客:从零到上线的完整指南]]></title>
-            <link>https://luckysnail.cn/posts/post-7</link>
-            <guid isPermaLink="true">https://luckysnail.cn/posts/post-7</guid>
+            <title><![CDATA[《繁花》中让人惊艳的台词]]></title>
+            <link>https://luckysnail.cn/posts/fan-hua</link>
+            <guid isPermaLink="true">https://luckysnail.cn/posts/fan-hua</guid>
         </item>
         <item>
             <title><![CDATA[一篇文章讲清楚 React Element、React Component、JSX、Fiber 以及Diff算法的概念及其相互关系]]></title>
@@ -402,11 +422,6 @@
             <guid isPermaLink="true">https://luckysnail.cn/posts/frontend-learn-line-1</guid>
         </item>
         <item>
-            <title><![CDATA[《繁花》中让人惊艳的台词]]></title>
-            <link>https://luckysnail.cn/posts/fan-hua</link>
-            <guid isPermaLink="true">https://luckysnail.cn/posts/fan-hua</guid>
-        </item>
-        <item>
             <title><![CDATA[前端学习路线（自学版）]]></title>
             <link>https://luckysnail.cn/posts/frontend-learn-line-2</link>
             <guid isPermaLink="true">https://luckysnail.cn/posts/frontend-learn-line-2</guid>
@@ -422,11 +437,6 @@
             <guid isPermaLink="true">https://luckysnail.cn/posts/mid-year-2024</guid>
         </item>
         <item>
-            <title><![CDATA[用了两天 Trae，更愿意为 Cursor 花钱了！]]></title>
-            <link>https://luckysnail.cn/posts/post-68</link>
-            <guid isPermaLink="true">https://luckysnail.cn/posts/post-68</guid>
-        </item>
-        <item>
             <title><![CDATA[2023 年中终结]]></title>
             <link>https://luckysnail.cn/posts/mid-year-summary-2023</link>
             <guid isPermaLink="true">https://luckysnail.cn/posts/mid-year-summary-2023</guid>
@@ -435,11 +445,6 @@
             <title><![CDATA[React最简版本低代码实现]]></title>
             <link>https://luckysnail.cn/posts/react-drag-drop-demo</link>
             <guid isPermaLink="true">https://luckysnail.cn/posts/react-drag-drop-demo</guid>
-        </item>
-        <item>
-            <title><![CDATA[微信小程序如何引入图标]]></title>
-            <link>https://luckysnail.cn/posts/use-iconfont-in-wechat-miniprogram</link>
-            <guid isPermaLink="true">https://luckysnail.cn/posts/use-iconfont-in-wechat-miniprogram</guid>
         </item>
         <item>
             <title><![CDATA[React 新手常犯的十个错误]]></title>
@@ -452,14 +457,9 @@
             <guid isPermaLink="true">https://luckysnail.cn/posts/redis-learn</guid>
         </item>
         <item>
-            <title><![CDATA[对萝卜快跑的一些观点]]></title>
-            <link>https://luckysnail.cn/posts/post-6</link>
-            <guid isPermaLink="true">https://luckysnail.cn/posts/post-6</guid>
-        </item>
-        <item>
-            <title><![CDATA[没写一行代码，让_AI_给我做了一个翻译神器]]></title>
-            <link>https://luckysnail.cn/posts/post-75</link>
-            <guid isPermaLink="true">https://luckysnail.cn/posts/post-75</guid>
+            <title><![CDATA[微信小程序如何引入图标]]></title>
+            <link>https://luckysnail.cn/posts/use-iconfont-in-wechat-miniprogram</link>
+            <guid isPermaLink="true">https://luckysnail.cn/posts/use-iconfont-in-wechat-miniprogram</guid>
         </item>
     </channel>
 </rss>
