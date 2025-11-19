@@ -1,0 +1,151 @@
+---
+title: 如何使用Next.js和GitHub Issues构建个人博客:从零到上线的完整指南
+date: 2024-08-08T01:33:41Z
+slug: post-7
+author: chaseFunny：https://github.com/chaseFunny
+tags: ["blog","教程"]
+---
+
+> 本文详细介绍了如何使用Next.js、GitHub Issues和Vercel从零开始构建并部署个人博客。包含技术栈选择、需求分析、开发过程和部署步骤等完整指南。
+
+大家好，我是幸运的蜗牛，今天来分享我最近从 0 到 1 开发的 个人blog，
+
+幸运的蜗牛的博客：https://www.luckysnail.cn/
+
+不知道大家是否有自己的 blog，或者想要做一个自己的 blog。我觉得有一个自己的 blog 还是很酷的事情，下面看我是如何从 0 到 1 实现个人 blog，先给大家看一下 blog 首页效果图
+
+![image-20240808012907019](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/work/image-20240808012907019.png)
+
+## 背景
+
+虽然我经常在CSDN、掘金和微信公众号等平台发布文章，这些平台编辑体验也很好 ，还自带流量，对内容分享的人来说，是非常友好的，但我一直希望能够拥有一个完全属于自己的博客平台。之前我尝试过使用Hexo、Docusaurus 和基于其他项目（`https://giscafer.com/`） Next.js 博客方案，但都不能完全满足我的需求。
+
+受到许多技术大佬个人博客的启发，加上我最近在学习Next.js（冴羽的 Next.js 掘金小册），我决定从零开始打造一个属于自己的博客系统。
+
+这次开发之前，我是想要直接修改开源的 blog （`https://cali.so/` ），fork 这个项目来进行二创，我也是这样做的，我都改了很多东西了，但是一个非常难受的点，就是它使用的都是国外的服务，尤其是 sanity ，我本地连接会经常连不上，非常影响开发体验，而且它的源码，很多是我不需要的，综合考虑就下定决定要做一个自己的 博客
+
+## 需求梳理
+
+确定要自己开发了，就需要梳理一下我需要做一个什么样子的 blog 。blog 核心就是文章。那么**就需要解决文章如何增删改查**。由于我对 MySQL 不熟，而且我也不希望在 Next.js 中开发后端，我选择了使用 GitHub Issues 来存储文章数据。整个工作流程如下：
+
+1. 使用 GitHub Issues 管理文章
+2. 通过 GitHub Actions 监听 Issues 变化
+3. 将 Issues 转换为文章内容
+4. 部署项目到 Vercel
+5. Vercel 自动监测代码仓库变化并重新部署
+
+有了核心功能思路，就可以开始需求排期，
+
+- [x] 搭建基础项目（commit：https://github.com/axin-s-Template/Nextjs-Boilerplate/commits/main/）
+
+  - [x] 代码规范：ESLint +  Prettier
+  - [x] 提交规范：husky + lint-staged + @commitlint/cli + @commitlint/config-conventional
+  - [x] 网站 SEO 元信息
+  - [x] 主题切换
+  - [x] 使用 src 作为源码目录， 让目录更加简洁直观
+
+- [x] 全局 导航栏 、底部 、布局组件、网站 SEO 信息、logo 、 404 页面开发
+
+- [x] 主页开发、引入 framer-motion 为网站添加动效
+
+- [x] 项目页面开发
+
+- [x] 博客列表 +  博客详情。引入 contentlayer 渲染 MDX
+
+- [x] 关于页面开发，也是一篇文章，使用 MDX 渲染
+
+- [x] 博客优化
+
+  - [x] 博客详情 toc 导航栏
+  - [x] 优化移动端展示效果
+  - [x] 推荐阅读（上一篇，下一篇）
+  - [x] 博客内容添加
+  - [x] 优化代码展示效果
+  - [x] loading 页面
+
+- [x] 添加 github actions ，实现 提交 issues ，转为帖子
+
+- [x] 添加百度和谷歌的验证、分析功能
+
+- [x] 支持 RSS ，Robots，sitemap.xml
+
+  >  以上代码 commit：https://github.com/coderPerseus/blog/commits/main/
+
+我们可以看一下网站在 chrome 的 LIghthouse 分数
+
+![image-20240808082948886](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/work/image-20240808082948886.png)
+
+还是挺不错的，
+
+## 技术栈
+
+我是先做了一个基础干净的 [Next.js 启动项目](https://github.com/axin-s-Template/Nextjs-Boilerplate)，然后基于启动项目来开发我的博客。下面来看看具体博客使用了哪些技术吧！
+
+- Next.js：React 框架
+- shadcn/ui ：UI 库
+- tailwindcss: CSS 框架，用于快速构建响应式设计网站（移动优先）
+- contentlayer: 内容层，用于获取和渲染内容。
+- next-themes: 主题切换库。
+- framer-motion：为网站添加动效
+- ESLint + Prettier ：代码格式化
+- husky: Git 钩子管理；
+- lint-staged: 在提交前检查暂存文件；
+- @commitlint/cli 和 @commitlint/config-conventional: 用于规范化提交信息
+- rss：实现 RSS 订阅能力
+- github-api + fs-extra ：同步 github issues 内容到项目作为帖子
+- gray-matter + reading-time + rehype-autolink-headings + rehype-prism-plus + rehype-slug + remark-gfm：优化博客渲染
+
+可以看到使用的都是非常成熟，社区活跃的技术和框架，我们项目即使遇到问题也能很快解决
+
+## 项目简介
+
+由于没有任何调用接口的需求，我目前就把项目做成了[静态导出](https://nextjs.org/docs/app/building-your-application/deploying/static-exports)的，也就是说我们其实构建生成的是一个静态网站。然后我目前是在 vercel 部署我的 blog，它有很多好处：
+
+1. Vercel 提供了与 GitHub 的无缝集成，只需将项目链接到 Vercel，每次推送到 GitHub 仓库时，Vercel 都会自动构建和部署最新的代码。自动化流程大大简化了部署过程，确保每次提交的代码都能自动构建发布
+2. Vercel 使用全球内容分发网络（CDN）来加速静态资源的加载。无论用户身处何地，都可以快速访问网站内容，提升用户体验和网站性能
+3. Vercel 可以配置自定义域名，提供免费的 HTTPS 证书，通过简单的配置，就可以将项目部署到自己的域名上，还享受 HTTPS ，香
+
+## 使用此项目做一个自己的 blog
+
+如果你希望使用这个项目作为自己的 blog，非常简单，只需要三步，
+
+### fork 项目 + 修改
+
+1. 首先 fork 项目，然后去 `src/config/site.ts `  这里放着网站的所有元信息，修改对应的内容为自己的就好，
+2. 然后去创建 .env 复制 .env.example 的代码，把对应的数据改为自己的。
+3. 全局搜索 luckysnail 不要限制大小写，替换为自己的名称
+4. 去 `.github/workflows/sync-post.yml` 修改 user.name 和 user.email 为自己的
+5. 我把 github issues 的帖子放在了 `data/blog` ，但是我可能还有一些帖子不在 github issues ，我将其放在了 posts 下，你可以删除我的添加你自己的
+6. 去 package.json 修改一些包的信息为你自己的 
+7. 去 public 和 assests 把一些静态资源替换为你自己的
+
+做完这些，你就得到了一个你自己的 blog ，现在就可以 push 代码，然后登录 vercel 部署你的 blog 了，部署其实非常简单，但是最好在本地先部署并运行看一下，看看是否可以成功。vercel 部署可以参考：`https://juejin.cn/post/7143067114025254919` 。部署好了之后我们应该可以看到类似这样
+
+![image-20240808090833701](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/work/image-20240808090833701.png)
+
+vercel 会提供三个免费域名给我们，我们可以访问链接查看我们部署在 vercel的 blog，这时候就可以把我们的 blog 分享出去，但我们如果主要是国内访问，我们会发现国内访问很慢，我推荐大家买一个国内的域名，在 settings 下的 domains 中进行绑定，然后我们使用绑定的国内域名访问，就会很快啦！
+
+## TODO
+
+后面，我打算使用 nest.js 作为后端，来为我的 blog 开发 点赞，访问数，游览数，帖子存储，评论，留言等功能
+
+- [ ] 友链
+- [ ] 登录
+- [ ] 评论
+- [ ] 留言板
+- [ ] 搜索 🔍
+- [ ] 收藏夹
+- [ ] 帖子同步平台展示
+
+## 感谢
+
+通过这个项目，我不仅实现了自己的博客系统，还深入学习了 Next.js、GitHub Actions 和 Vercel 部署等技术。希望这篇文章能够帮助到想要搭建个人博客的朋友们。在我开发这个 blog 的时候，我参考了很多我觉得不错的 blog。下面是我参考的和看过源码的 blog，感谢它们的开源
+
+- 在设计和 UI 上，很多都是参考了：`https://cali.so/` 。这是一个开源的 blog（我的也开源啦）
+- https://www.giscafer.com/
+- https://innei.in/
+- https://fuxiaochen.com/
+- https://starter.weijunext.com/
+
+---
+此文自动发布于：<a href="https://github.com/coderPerseus/blog/issues/7" target="_blank">github issues</a>

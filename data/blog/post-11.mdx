@@ -1,0 +1,172 @@
+---
+title: 如何把这个 blog 项目，部署在自己的服务器上
+date: 2024-08-17T12:35:01Z
+slug: post-11
+author: chaseFunny：https://github.com/chaseFunny
+tags: ["blog","部署","nginx"]
+---
+
+#  如何把 Next.js 静态项目部署在服务器上
+
+## 背景
+
+最近在做个人 blog，最初是部署在 vercel 上，通过 `CI/CD` 自动检测更新发布。但是部署在 vercel 上访问有时候很慢，于是就决定部署在服务器上，那如果你也需要将一个 Next.js 静态项目部署在服务器，这篇文章对你会有帮助，我会从 0 到 1 完成部署工作，文末我特别写了一些我的踩坑
+
+## 先决条件
+
+> 在真正开始部署前，还需要你准备一下，需要如下几个条件
+
+1、 一台服务器
+
+2、 一个 build 成功可以启动的项目源码
+
+3、 一个域名（非必须）
+
+4、 申请一个 SSL 证书（非必须）
+
+下面我们开始吧！
+
+## 安装宝塔
+
+这里我买的是 阿里云服务器，阿里云如何安装宝塔，参考：https://www.yuque.com/asgas/bzyz7m/eepyb1hynvvhmvmg
+
+如果是其他云，也可以百度搜索一下，大致一样
+
+安装成功。我们进入宝塔面板
+
+![image-20240817193843605](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/work/image-20240817193843605.png)
+
+然后点击【添加站点】，然后我们填写站点信息，这里我们是有 Nginx 的，如果你没有，可以现在去安装一下，等会要用
+
+![image-20240817194125348](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/work/image-20240817194125348.png)
+
+然后，我们进入项目跟目录，把我们的 博客 build 源码 上传上来，然后我们去点击我们添加的站点右侧的【设置】，然后点击左侧的【配置文件】，添加配置代码，这里如果你的配置文件添加不了，是 宝塔版本的问题，可以尝试更新或者重新安装宝塔，配置代码如下：
+
+```nginx
+server
+{
+    listen 80;
+    listen 443 ssl http2 ;
+    server_name 123.45.67.8 xxx.cn www.xxx.cn;
+    index index.php index.html index.htm default.php default.htm default.html;
+    # 这里 xxx.cn 是你的项目文件所在地
+    root /www/wwwroot/xxx.cn;
+   
+    #SSL-START SSL相关配置，请勿删除或修改下一行带注释的404规则
+    #error_page 404/404.html;
+    # 替换 xxx 为真实的地址
+    ssl_certificate    /www/server/panel/vhost/cert/xxx/fullchain.pem;
+    ssl_certificate_key    /www/server/panel/vhost/cert/xxx/privkey.pem;
+    ssl_protocols TLSv1.1 TLSv1.2 TLSv1.3;
+    ssl_ciphers EECDH+CHACHA20:EECDH+CHACHA20-draft:EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:EECDH+3DES:RSA+3DES:!MD5;
+    ssl_prefer_server_ciphers on;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 10m;
+    add_header Strict-Transport-Security "max-age=31536000";
+    error_page 497  https://$host$request_uri;
+
+    #SSL-END
+    	#引用重定向规则，注释后配置的重定向代理将无效
+# 	include /www/server/panel/vhost/nginx/redirect/xxx/*.conf;
+
+    #禁止访问的文件或目录
+    location ~ ^/(\.user.ini|\.htaccess|\.git|\.env|\.svn|\.project|LICENSE|README.md)
+    {
+        return 404;
+    }
+
+    #一键申请SSL证书验证目录相关设置
+    location ~ \.well-known{
+        allow all;
+    }
+
+    #禁止在证书验证目录放入敏感文件
+    if ( $uri ~ "^/\.well-known/.*\.(php|jsp|py|js|css|lua|ts|go|zip|tar\.gz|rar|7z|sql|bak)$" ) {
+        return 403;
+    }
+    location / {
+      try_files $uri $uri.html $uri/ =404;
+  }
+
+  # This is necessary when `trailingSlash: false`.
+  # You can omit this when `trailingSlash: true`.
+  location /posts/ {
+      rewrite ^/posts/(.*)$ /posts break;
+  }
+     # 处理单页应用的路由
+    # location / {
+    #     try_files $uri $uri/ /index.html;
+    # }
+    
+    location ~ .*\.(gif|jpg|jpeg|png|bmp|swf)$
+    {
+        expires      30d;
+        error_log /dev/null;
+        access_log /dev/null;
+    }
+
+    location ~ .*\.(js|css)?$
+    {
+        expires      12h;
+        error_log /dev/null;
+        access_log /dev/null;
+    }
+    access_log  /www/wwwlogs/xxx.log;
+    error_log  /www/wwwlogs/xxx.error.log;
+}
+```
+
+如果你还没有 SSL ，那么删除对应的代码，我们现在访问我们的网站地址，就可以正常访问啦
+
+![image-20240817195127755](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/work/image-20240817195127755.png)
+
+注意：这时候我们没有配置 SSL，只能通过 http 来访问，到这里我们就完成了最基础的网站上线，如果我们要开 HTTPS 和添加域名，那么我们继续
+
+## 添加域名 和 开启 HTTPS
+
+开启 https 就需要域名证书，我们可以通过腾讯云白嫖，进入后直接搜索 SSL 证书，进来就有一个【申请免费证书】
+
+![image-20240817195500817](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/work/image-20240817195500817.png)
+
+我们申请成功下载证书，选择其他，点击下载，拿到证书后，我们去宝塔面板配置一下
+
+![image-20240817195652517](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/work/image-20240817195652517.png)
+
+我们配置成功后，它会自动更新配置文件，这时候我们应该就能通过https 访问了，
+
+添加域名就更简单了，我们去我们的购买域名的地方，需要添加一下解析
+
+![image-20240817195927593](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/work/image-20240817195927593.png)
+
+我们添加完成解析后，然后在我们的宝塔面板，打开网站设置，然后点击	【域名管理】添加要使用的域名
+
+![image-20240817200031200](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/work/image-20240817200031200.png)
+
+## 注意
+
+1、 我们需要在服务器把对应的端口开启访问权限（关闭防火墙）要不然就会访问不了
+
+![image-20240817200212030](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/work/image-20240817200212030.png)
+
+2、我们的配置代码中中有一点是为了解决刷新 404 。代码为：
+
+```nginx
+ location / {
+      try_files $uri $uri.html $uri/ =404;
+  }
+
+  #This is necessary when `trailingSlash: false`.
+  #You can omit this when `trailingSlash: true`.
+  location /posts/ {
+      rewrite ^/posts/(.*)$ /posts break;
+  }
+```
+
+这里还解决了，如果去到了文件夹路由的处理方式
+
+## END
+
+到这里就结束啦，但是我们部署在自己的服务器上，现在不能通过 github issues 自动重新部署了，这是需要解决的问题，要不然每次更新文章，就需要重新部署很麻烦的
+
+---
+此文自动发布于：<a href="https://github.com/coderPerseus/blog/issues/11" target="_blank">github issues</a>

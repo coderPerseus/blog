@@ -1,0 +1,167 @@
+---
+title: 前端正在逐渐被“锈”化
+date: 2024-12-22T14:15:56Z
+slug: post-36
+author: chaseFunny：https://github.com/chaseFunny
+tags: ["前端基建","学习笔记"]
+---
+
+jeff Atwood 在 2007 年说："any application that can be writen in JavaScript , willeventually be written in JavaScript"，翻译过来就是：“任何可以使用 JavaScript 来编写的应用，并最终也会由 JavaScript 编写”，也被称为：Atwood定律。2024 回过头看看，正如他所讲那样 JavaScript 语言遍地开花。但是随着前端扮演角色越来越重要，JavaScript 由于是单线程从而导致性能问题也暴露出来，webpack 打包慢，项目上 ESLint + Prettier后卡死等等。可以看到天下苦 JavaScript 性能差久已。于是 Rust 也就顺势而上了，目前前端基建领域基本上都被“锈”化了一遍，今天我们就来看看被“锈”化的 ESLint + Prettier ，**Biome**
+
+# 初识 Biome
+
+在认识 Biome 之前，先聊聊为什么要了解它，也就是 ESLint 和 Prettier 的问题：
+
+- ESLint + Prettier 的组合需要维护多个配置文件
+- 传统工具的性能问题，特别是在大型项目中
+- 工具之间的配置冲突
+- 环境依赖复杂
+
+我们再来看看“锈”化后的代码格式化工具 Biome：
+
+1. **极致的性能**：由 Rust 编写，比传统工具快 35 倍 
+2. **简单的配置**：零配置即可使用，无需复杂设置
+3. **一体化方案**：将格式化和代码检查集成在一个工具中
+4. **兼容性强**：与 Prettier 有 97% 的兼容性 
+5. **支持多种语言**：支持 JavaScript、TypeScript、JSX、JSON、CSS 和 GraphQL 
+
+简直可以说是“降维打击”，知道了 why，我们看看 Biome 是个 what？其实 Biome 还有一个彩蛋，我们下面讲
+
+带着好奇和憧憬的心情，我搜索到了 Biome 的官网：https://biomejs.dev/ 。官网上是这样介绍的： web 项目的一个工具链，谈笑间即可完成格式化和 lint 等操作。我只能说 Biome 是懂吊胃口的。必须学啊！
+
+它提供了 playground :https://biomejs.dev/playground/ 。但是需要吐槽的是明明有中文入口，但是 404：![image-20241222162854025](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/work/image-20241222162854025.png)
+
+简单体验了一下感觉还是可以的，但是 playground 是游乐场啊，行不行还是要去项目里看看的
+
+![image-20241222163042597](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/work/image-20241222163042597.png)
+
+在去之前，还是先看看人家官方还说了哪些：
+
+- 像 Prettier 一样格式化代码，但是节省了时间
+- 修复问题，Biome 输出更加详细更加场景化的诊断
+- 一个命令，就搞定 Eslint + Prettier
+- 默认集成了社区的最佳实践
+
+等等好处，我们赶快试试吧！
+
+# 体验 Biome
+
+使用 Biome 大多数是两个场景：
+
+1. 搭建一个新项目，集成 Biome，抛弃 ESLint + Prettier
+2. 已经有的项目替换 Biome 为格式化和代码检查工具
+
+我们一个个来体验，先看新项目如何集成：
+
+## 新项目集成 Biome
+
+我们使用 vite 的脚手架创建一个新的 react 项目， 创建成功后，我们去 package.json 把 eslint + prettier 相关的依赖删除，这样项目就没有 Prettier 和 ESLint 的。
+
+![image-20241222165750217](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/work/image-20241222165750217.png)
+
+我们同时关闭编辑器的 eslint 和 prettier 插件，我们去修改代码会发现已经不会自动格式化，不规范代码也不报错了。那太好了，接下来请我们主角登场：
+
+```bash
+pnpm i -D --save-exact @biomejs/biome 
+```
+
+然后运行 `pnpm biome init`  来初始化 biome 配置文件
+
+![image-20241222170355718](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/work/image-20241222170355718.png)
+
+上面说：
+
+![image-20241222170537551](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/work/image-20241222170537551.png)
+
+我们按照它说的做，我们可以先故意写一些不规范的代码，然后运行：` npx @biomejs/biome check --apply ./src`，看看 biome 会不会自动识别出来
+
+![image-20241222171006691](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/work/image-20241222171006691.png)
+
+结果它都正确识别出来了，人家一个工具不仅仅是干了 ESLint 的事情，还干了 Prettier 的事情（真的是工具链）。但是我们使用这俩的时候，我们会在 package.json  写好脚本，这样就不用每次在终端输入了，biome 当然也行的：
+
+```js
+"format": "biome format --write .", // 格式化所有文件
+"lint": "biome lint .", // 进行代码检查
+"check": "biome check .", // 同时运行格式化和代码检查
+"fix": "biome check --apply .", // 自动修复可以修复的问题
+"ci": "biome ci ." // 环境中使用的检查命令
+```
+
+这上面写的都是什么呀！不急，我们马上学，下面我们来看看常用的 biome 命令（CLI）
+
+- init：项目根目录创建 `biome.json` 配置文件。生成的配置文件包含基本的格式化和检查规则
+- check：最全面的命令，它会同时运行格式化、代码检查和导入排序 
+  - --write：告诉 Biome 直接修改源文件，将格式化后的内容写入原文件
+- format：仅格式化（可理解为 Prettier）。后面可以跟目录，文件，也可以是特定类型文件（类似：`"./src/**/*.{js,jsx,ts,tsx}"`）
+  - --write：直接应用格式化
+- lint：仅代码检查（可理解为 ESLint）
+  - --write：自动修复可修复的问题
+- ci：专门为 CI 环境设计，会以非交互模式运行检查
+
+一些常用的命令行选项
+
+```bash
+# 详细输出模式
+--verbose
+
+# 指定配置文件路径
+--config-path=./custom-biome.json
+
+# 设置诊断级别
+--diagnostic-level=error|warn|info
+
+# 忽略语法错误
+--skip-errors
+
+# 修改输出格式
+--reporter=json|summary|github
+
+# 规则集选项
+--rule-set recommended
+# recommended 规则集包含：
+# 最佳实践规则
+# 常见错误检测
+# 代码风格规则
+# 这些规则经过 Biome 团队精心筛选和测试
+```
+
+我们还可以在 pre-commit 中运行`pnpm biome check --write $(git diff --staged --name-only)` ，来先运行 biome
+
+# 老项目使用 Biome
+
+上面图片给出的提示中，还有两个命令我们没有使用，就是
+
+```bash
+biome migrate eslint --write
+biome migrate prettier --write
+```
+
+在老项目一般都是集成了 ESLint + Prettier 的，所以我们迁移，肯定需要兼容之前的规范的。我们可以使用这两个命令来实现，更多细节：https://biomejs.dev/zh-cn/guides/migrate-eslint-prettier/ 。
+
+做完这两个事项后，我们先检查一下之前配置的规则是否都还在，如果都还是正常的，我们就可以移除 ESLint 和 Prettier 相关的依赖和配置文件了
+
+我使用我的博客项目测试，非常好用，以后再也不怕写代码保存的时候卡死了
+
+# Biome  插件
+
+像 ESLint 和 Prettier 一样，Biome 也有自己的编辑器插件，我们只需要搜索安装，然后
+
+![image-20241222175846141](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/work/image-20241222175846141.png)
+
+# 总结
+
+项目配置 ESLint 和 Prettier 一大堆依赖和代码，运行 ESLint 和 Prettier 编辑器总是卡死，Biome 的出现解决了这个问题，无需任何配置，只需要安装好就可以写代码。Biome 代表了前端工具链的新方向，它通过 Rust 优秀的性能，已经受到社区的广泛喜爱。
+
+而且 Biome 还赢得了 prettier 挑战赛的 20000 元美金，感兴趣的可以看：https://biomejs.dev/blog/biome-wins-prettier-challenge/ 。这个挑战的要求是：通过超过 95% 的 Prettier JavaScript 测试，可以看出 Biome 真的是可以信赖的，这算不算一个彩蛋哈哈！
+
+# 参考
+
+1. 官网：https://biomejs.dev/
+2. [Rust 引领前端基建新潮流：字节跳动的深度应用实践](https://www.infoq.cn/article/v10gup6lmqu0oiglrkyc)
+3. [什么是 “锈”化](https://rusty.course.rs/)
+4. [使用 biome 的新项目](https://github.com/chaseFunny/new-project-with-biome)
+5. [我的博客改为 blome 作为代码检测](https://github.com/coderPerseus/blog/tree/feature/useBiome)
+6. [和 AI 的聊天](https://devv.ai/search?threadId=e7o1vuup7da8)
+
+---
+此文自动发布于：<a href="https://github.com/coderPerseus/blog/issues/36" target="_blank">github issues</a>

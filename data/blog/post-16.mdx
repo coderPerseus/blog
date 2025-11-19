@@ -1,0 +1,94 @@
+---
+title: Next.js 14 项目踩坑日志（企业级项目）
+date: 2024-08-31T10:42:00Z
+slug: post-16
+author: chaseFunny：https://github.com/chaseFunny
+tags: ["Next.js","踩坑记录"]
+---
+
+# 背景
+
+由于在开发 Next.js 项目（在盈利）过程中遇到了太多的问题。决定专门写一篇文章记录，并且持续更新，大家可以通过：，查看最新的记录
+
+## next.js 踩坑
+
+> 以下大多都是产生线上 bug 的问题，分享出来希望使用 Nextjs 的开发者避坑
+
+### Link 标签自动 prefetch 
+
+官方文档：https://nextjs.org/docs/app/api-reference/components/link#prefetch，意思就是默认会预取 Link页面的数据，静态路由和动态路由稍微有一点点区别，实际测试下来，应该是 Link 标签第一次进入视口会触发 prefetch 逻辑。
+
+不知道是不是我记错了，我明明记得之前 Link 标签是不会预取的，但是无论怎么说，默认开启预取是很不好的设计，因为这个默认逻辑导致线上页面卡死，因为我们的网页需要 SEO ，一个页面最多可能 500多个 Link 标签，但是后端做了 1 秒最多 500 个请求的限制，这样就会导致问题
+
+解决办法就是关闭 prefetch：`<Link href="/dashboard" prefetch={false}>`
+
+还有就是大家在开发的时候，有没有 Link 跳转非常慢，所以我不 prefetch ，就应该跳转到下一个页面很慢吗？但是打包 build 后，Link 跳转又会快一些，这种 dev 和 build 后不一致的行为造成了很大的开发困惑
+
+### 自带 Image 的一些问题
+
+关于 Next.js Image 的问题讨论：
+
+1. 自带的图片优化问题：https://www.reddit.com/r/nextjs/comments/1bhwyqg/anyone_else_have_problems_with_nextimage_on/（妥妥的负向优化好吧！太不稳定了）
+2. 构建的时候，产生导入问题：https://stackoverflow.com/questions/78194214/next-js-image-imports-stopped-working-after-updating-nextjs-from-14-0-1-to-14-1
+
+下面我说一下我在使用 Next.js 的 Image 遇到的问题，
+
+1）第一个问题就是，如果你是使用 Next.js 框架，你不使用 img 标签，它会自动的给你的编辑器进行警告，让使用他的 Image，嗯，这真的合理吗？
+
+2）如果你有把页面转为 图片 下载的需求，正常我们会使用 html2canvas 或者 dom-to-image 。那么你使用 Image 可能会下载不了对应的图片，我不知道为什么？但是我使用原生的 img 就是正常的，社区也没有相关的解决方案
+
+3）当我全局进行静态导出的时候 Image 就不能进行优化，必须添加 unoptimized 属性
+
+4）必须设置宽高，即使使用 fill，父元素也必须设置宽高，而且父元素还不能是 static 定位，这真的是太让人无语了，不知道大家有没有好的解决方案
+
+### 缓存默认行为
+
+不知道大家是否使用过 Next.js 的fetch 请求的缓存能力，next.js 14 框架默认是会帮我做很多关于缓存的事情，例如：路由默认会采用静态渲染，数据请求的结果默认会被缓存等等
+
+而且在 Next.js 中，光缓存类型就高达 4 种类型，
+
+![image-20240831162518274](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/work/image-20240831162518274.png)根本记不住，只能不断的查阅文档，更不用说关于缓存配置相关的知识更是多的数不过来。但是这种框架的东西都是不稳定的，Next.js 官方在 15 版本，**fetch 请求、GET 路由处理程序和客户端导航默认不再缓存**。这不是把我们这些使用的开发者当🐒耍吗？
+
+上面说的还是 Next.js 的缓存使用麻烦的问题，最大的问题是：缓存导致 开发环境和 build 后的行为不一致。举个例子：我在正常使用 Next.js 14 项目本地连接后端进行开发，这时候后端已经停止了 API 接口服务，但是我还是能获取到一些接口数据的，你说神奇不，后端都没了，我还能拿到接口数据，最后想想，一定是缓存搞得鬼啊！这对于本地开发影响非常大，有时候可能我们写了 bug，但是由于缓存，我们没测试出来，直接发布，造成线上问题，而且 dev 环境的缓存策略和 build 后不一致，我不得不 build 后去验证我的代码是否正确，这非常影响开发体验，如果是大型项目，build 一次需要很长时间，那将会浪费非常多的时间在等待 build，进行验证。
+
+还遇到一个很小众的坑，如果生产环境配置了 CDN，导致提供服务的域名是 A，但是实际请求的域名是 B，这时候使用 server action 清除缓存，会出现域名不匹配的问题，修复方法是：
+
+```typescript
+ // next.config.js
+experimental: {
+    serverActions: {
+      allowedOrigins: ["www.xxxx.com"],
+    },
+  },
+```
+
+### 使用 removeConsole 会清除所有 log
+
+由于 removeConsole 会清除所有打印，有时候我们希望打印一些内容在node 端，然后在游览器控制台不打印任何内容，解决办法是，游览器控制台统一使用 console.log ,node 端打印使用其他，例如：console.warn 
+
+### 根节点的 layout.tsx 是 客户端组件，整个 Next.js 项目无法导出 Metadata
+
+如果项目根节点 layout.tsx 是客户端组件，那么所有的子页面组件都无法导出 Metadata 来做 SEO，只能通过导出 generateMetadata 来实现生成 SEO 内容
+
+### dev 环境和 build 后的行为不一致
+
+这个就很多了，
+
+1）本地开发 Link 跳转慢，但是 build 后快
+
+2）本地请求 java 后端接口很慢，有时候会超时，但是 build 后不会
+
+3）本地使用 antd 样式正常，但是 build 样式优先级错乱
+
+### 使用 PM2 部署，CPU 占满
+
+我使用 4核心 8G 的一个服务器进行部署服务，然后使用 Jmeter 进行压测，结果 50 个线程就会导致 CPU 打满，我使用了 PM2 cluster 的能力，但是依然没有效果，由于不好排查原因，暂时不确定是我们代码的问题，还是 Next.js 的问题
+
+## 未完，暂时这么多，会持续更新
+
+
+
+感谢你阅读到这里，我现在特别喜欢尤雨溪的一句话：”一个框架挖下许多艰难复杂的坑，然后不填这些坑，而是靠文档去解释如何绕开这些坑“，这真的合理吗？大家使用 Next.js 是否一路畅通无阻呢？
+
+---
+此文自动发布于：<a href="https://github.com/coderPerseus/blog/issues/16" target="_blank">github issues</a>

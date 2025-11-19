@@ -1,0 +1,161 @@
+---
+title: webStorm 快速入门上手开发
+date: 2024-10-27T02:36:52Z
+slug: post-22
+author: chaseFunny：https://github.com/chaseFunny
+tags: ["编辑器"]
+---
+
+大家好，我是幸运的蜗牛。IDEA 的 webStorm 现在免费向个人开放使用了，我之前也使用过一段时间的 webStorm，但是种种原因又转回了 VSCode 。最主要的原因是因为 webStorm 的 主题会让我看代码不舒服，而且配置低的设备会非常卡。如果你没有使用过 webStorm，可以跟我来快速上手 webStorm 进行项目开发
+
+## 下载和安装
+
+我们进入[[下载地址](https://www.jetbrains.com/webstorm/download)](https://www.jetbrains.com/webstorm/download) ，点击 download 等待下载完成后，我们进行安装，2.29 G ，这个大小就拦截了一部分人去使用 vscode 了。进入我们可以看到如下：
+
+![图1](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/typora/image-20241026213136042.png)
+
+我们一直继续，到登录的地方，我们选择非商业使用，我们可以进行登录或者注册
+
+![图2](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/typora/image-20241026213306453.png)
+
+然后我们点击非商业使用就可以啦！
+![图3](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/typora/image-20241026213518679.png)
+
+
+它还贴心的可以导入 vscode 配置，如果你是 vscode 转 webstorm 就可以无痛切换了
+![图4](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/typora/image-20241026213648564.png)
+
+
+下面就进入了真正的首页了，如果你有项目就可以选择打开项目，如果你没有项目，就可以新建一个项目了，它还贴心的为我们准备了项目模板，但是真正开发应该很少会使用 webstorm 自带的模板吧！
+
+## 了解页面布局
+![图5](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/typora/image-20241026220200528.png)
+
+这里我打开了我的个人 blog 项目，不得不说这个新版的 UI，怎么这么熟悉呢？下面我们依次来看每个块区的作用：
+
+1. 编辑器导航栏，这里你可以关闭窗口，切换项目，切换分支，打开设置页面
+2. 左侧状态栏：这里展示的就是一些小图标，用来控制 3 、6和 8 展示的内容
+3. 最常用的就是项目目录展示，但是也可以通过2 调整来展示其他的插件内容
+4. 代码展示区域，可以通过 2 或者 5 来调整展示的内容
+5. 当前编辑器所有打开的代码文件，可以切换和删除
+6. 展示一些插件的内容，也是内容展示区域
+7. 也是一些小图标，通知和一些插件的图标会展示在这里
+8. 也是内容展示区域，日常会在这里显示终端和 git 
+9. 状态栏，左侧展示当前所在的位置，右侧展示一些状态
+
+在日常开发中，我们最常用的布局就是 4 ，很多时候 3、6、8 都会隐藏起来
+
+其实我们日常经常使用的还有一个地方就是这里
+
+![图6](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/typora/image-20241026223942503.png)
+
+我们会使用这里来进行 webstorm 的一些操作，例如新建（打开）项目，
+
+## 常用的插件
+
+webStorm 内置了一些插件来提高我们的开发效率，例如 prettier，tailwindcss ，sonarLint 等等，我们可以安装一些提升幸福感的插件
+
+1）主题插件：
+
+我非常喜欢vscode 的 default dark：https://plugins.jetbrains.com/plugin/12255-visual-studio-code-dark-plus-theme ，更多请阅读：https://blog.jetbrains.com/webstorm/2022/12/best-webstorm-themes/#visual_studio_code_dark_plus_theme
+
+2）翻译：
+
+Translation 是非常好用的，满足了我对编辑器中 翻译插件的所有幻想，支持鼠标右键驼峰命名的多个单词的翻译；也可以选中一句话进行翻译，这在看源码的时候很有用；在右上角也有一个按钮可以快速翻译，这在变量命名的时候很有用，
+
+3）官方提供的十个必须知道的插件：
+
+https://blog.jetbrains.com/webstorm/2020/05/plugins-for-webstorm-you-need-to-know-about/
+
+包含主题设置，进度条设置，图标设置，快捷键提示，演示助手等等
+
+## 常用的快捷键
+
+最常用的 保存（ ⌘ + S）、撤回（ ⌘ + z）、取消撤回（⇧ +  ⌘ + Z）
+
+- 两次 Mac ⇧（shift) 键：打开搜索
+- ⇧ + ⌘ + F  ：文件中查找代码
+- ⌘ + , ：打开设置页面
+- ⌘ + ⇧ + 加号 ：展开所有
+- ⌘ + N：新建文件 ；⌘ + delete ：安全删除快捷键
+
+更多：
+
+```bash
+## 查找替换操作
+  shift 按两次             // 随处搜索，搜索文件、功能、代码很方便
+  command + f              // 当前页搜索
+  command + shift + f      // 全局搜索字段
+  command + r              // 替换当前文档
+  command + shift + r      // 全局替换字段
+## 视图展示
+  command + 1              // 显示隐藏左侧文件树
+  command + 0              // 显示当前待提交代码，用于提交前 diff
+  command + 9              // 显示当前历史所有的提交记录
+  command + 7              // 显示当前文件的结构，特别是看 Class 时候很方便
+  command + 上箭头         // 跳转到导航栏
+## 代码操作
+  command + option + l     // 格式化代码(常用)
+  shift + f6               // 使文件、标签、变量名重命名
+  f2, shift + f2           // 切换到上\下一个突出错误的位置
+  shift + 回车             // 无论在什么位置，自动跳到下一行
+  option + 回车            // 警告代码快速给出自动修正
+  command + 点击           // 跳到代码调用位置
+  command + delete         // 删除当前行，command + x也可以
+  command + d              // 复制新增一行一样的代码
+  command + w              // 关闭当前文件选项卡
+  command + /              // 注释行代码
+  command + b              // 跳转到变量声明处
+  command + shift + c      // 复制文件的路径
+  command + shift + [ ]    // 选项卡快速切换，很有用
+  command + shift + u      // 大小写自动转
+  command + shift + /      // 注释块代码
+  command + shift + +/-    // 展开/折叠 当前选中的代码块
+  command + shift + v      // 从剪切板里选择黏贴
+## git 操作
+  command + k              // 填写代码提交记录
+  command + option + k     // 提交代码
+  command + option + z     // 撤销当前代码改动
+  command + d              // 选中两个文件进行对比，充当文件夹 diff 工具
+```
+
+其实快捷键都在设置 > 按键映射中，我们可以进行任意 DIY
+
+官方推荐必须要知道的快捷键：https://blog.jetbrains.com/webstorm/2015/06/10-webstorm-shortcuts-you-need-to-know/
+
+## 提升编程体验的小操作
+
+1）增加内存
+
+我们可以在 webstorm 帮助 > 更改内存设置 中进行调整，默认是 2048 ，但是 webstorm 很吃内容，如果不够卡死，我们就可以通过这里调整，注意：调整的数值最好是 1024 的倍数
+
+2）修改主题、整个编辑器放大、缩小
+
+进入设置页面
+
+![image-20241026222918315](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/typora/image-20241026222918315.png)
+
+如果主题不满意，还可以去插件市场进行选择
+
+3）保存的时候设置自动格式化，在设置 > 工具 >  保存时的操作 ，进行配置保存同时进行的操作
+
+4）创建代码块模版，在 编辑器 > 实时模板下创建自己想要的代码模板即可
+
+更多需要大家自行探索，使用多了就会有自己的提升效率的配置
+
+## webstorm 的优点
+
+1）自带的 git 功能非常强大，我在 vscode 中如果本地提交 merge，然后远程有提交和本地还有冲突，这时候在 webstorm 非常简单就可以解决，通过它自带的更新和推送功能，webstorm 的 提交 diff 代码也非常清晰
+
+2）类型提示，在 webstorm中，未声明的变量、没有使用的变量会给出警告，对于不规范的代码也会检测提示
+
+3）安全删除（选中文件，command + delete）：它会帮我检测，把所有使用的地方也一起删掉
+
+4）快速查看包信息，鼠标移入一个包暂停一会，它会展示包的一些信息
+
+5）目录展示了 node_modules 目录和 dist 目录，高亮显示
+
+你觉得 webStorm 和 vscode 哪个更好点呢？
+
+---
+此文自动发布于：<a href="https://github.com/coderPerseus/blog/issues/22" target="_blank">github issues</a>

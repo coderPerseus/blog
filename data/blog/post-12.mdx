@@ -1,0 +1,153 @@
+---
+title: 阿里云 centos 服务器，使用宝塔 + webHook 自动同步代码，构建部署
+date: 2024-08-18T08:27:30Z
+slug: post-12
+author: chaseFunny：https://github.com/chaseFunny
+tags: ["部署","CI/CD"]
+---
+
+由于部署在服务器一个静态 blog：`https://mp.weixin.qq.com/s/tBxfcDsMIh_HCRS1EqBMoQ` ，希望源码变更就会自动重新部署，下面一起来实现一下
+
+## 需求
+
+我项目源码是在 github，通过 github issues 来存储 blog ，通过 github actions 来检查 issues 变更，自动更新代码，原本是在 vercel 部署，它可以关联 github 仓库，自动监控源码实现自动重新部署，现在因为部署在 vercel 不稳定，就迁移到 国内阿里云服务器，自己部署，那么之前的 CI/CD 就不生效了，需要自己再弄一下，要实现的话，我参考了网上的方案。我们先梳理一下我们的需求：
+
+1. 每次 github 源码更新，希望 gitee 的关联源码也会自动更新（这里暂时不行，只能手动重新点击同步按钮，也不是很麻烦）
+2. gitee 的源码更新，会提示宝塔服务器，在宝塔服务器上重新 build ，然后部署上线
+
+## 实现
+
+### 安装 git
+
+```bash
+# 安装命令
+yum -y install git
+# 然后看看是否安装成功
+git version
+# 生成秘钥
+ssh-keygen -t rsa
+# 拿到秘钥，给码云
+cd ~/.ssh
+cat id_rsa.pub
+```
+
+git 拉取代码，成功 🎉🎉🎉
+
+![img](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/work/1723957015510-1055824c-67e6-40d2-8716-8d7eebba90c5.png)
+
+### 安装 web hook
+
+去宝塔面板【软件商店】搜索，然后安装
+
+![img](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/work/1723955575913-cf60e14a-8b9b-4eaa-9f67-7055a41065f5.png)
+
+安装完毕我们点开插件选择：添加；名称随意，脚本里面先随便输入一下，晚点再写。提交后，我们可以看到列表就会有一条记录，我们点击查看密匙
+
+![img](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/work/1723955841856-dc3ed46e-7744-4bed-ad30-7836be8c74b7.png)
+
+我们复制这个完整的链接
+
+![img](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/work/1723955910161-862e7123-0f36-4eac-8a8d-c7682ed555fd.png)
+
+我们去码云去配置 webhooks （果然哪里都有“马云”）
+
+![img](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/work/1723956118470-2571693d-5a95-4a20-babb-0e96fcf525f7.png)
+
+我们点击 【添加 webHooks】然后，我们填写对应的信息和勾选对应的事情，点击确定就好了，我们会看到
+
+![img](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/work/1723956327949-72627f3d-7090-4289-82c5-1d0d4ea96378.png)
+
+然后，我们去宝塔的【webHook】配置，添加我们刚刚创建的 Hook 的脚本
+
+```bash
+#!/bin/bash
+echo ""
+#输出当前时间
+date --date='0 days ago' "+%Y-%m-%d %H:%M:%S"
+echo "Start"
+#git分支名称
+branch="main"
+#git项目路径
+gitPath="/www/wwwroot/blog"
+#git 仓库地址
+gitHttp="git@gitee.com:chaseFunny/blog.git"
+#gitHttp="http://192.168.2.20/llh/$1.git" //多仓库的时候
+echo "Web站点路径：$gitPath"
+#判断项目路径是否存在
+if [ -d "$gitPath" ]; then
+cd $gitPath
+#判断是否存在git目录
+if [ ! -d ".git" ]; then
+echo "在该目录下克隆 git"
+sudo git clone $gitHttp gittemp
+sudo mv gittemp/.git .
+sudo rm -rf gittemp
+fi
+echo "拉取最新的项目文件"
+#sudo git reset --hard origin/$branch
+git remote add origin $gitHttp
+git branch --set-upstream-to=origin/$branch $branch
+sudo git reset --hard origin/$branch
+sudo git pull $gitHttp 2>&1
+echo "设置目录权限"
+sudo chown -R www:www $gitPath
+echo "End"
+exit
+else
+echo "该项目路径不存在"
+echo "新建项目目录"
+mkdir $gitPath
+cd $gitPath
+#判断是否存在git目录
+if [ ! -d ".git" ]; then
+echo "在该目录下克隆 git"
+sudo git clone $gitHttp gittemp
+sudo mv gittemp/.git .
+sudo rm -rf gittemp
+fi
+echo "拉取最新的项目文件"
+#sudo git reset --hard origin/$branch
+sudo git pull gitHttp 2>&1
+echo "设置目录权限"
+sudo chown -R www:www $gitPath
+echo "pnpm run build"
+sudo pnpm i &&  pnpm run build
+echo "End"
+exit
+fi
+```
+
+我们只需要把一些配置改为自己的，最后的脚本需要改为自己实际的，简单解释一下这段代码
+
+这段代码是一个Bash脚本，用于自动化部署Git项目。让我们逐步解析其功能：
+
+1. 脚本开始时输出当前日期和时间 
+2. 定义了几个变量：
+
+- - `branch`: Git分支名称（"mian"，可能是"main"的拼写错误）
+  - `gitPath`: Git项目的本地路径
+  - `gitHttp`: Git仓库的远程地址
+
+1. 脚本检查`$gitPath`是否存在：如果存在：
+
+如果不存在：
+
+- - 进入该目录
+  - 检查是否有`.git`目录，如果没有，克隆仓库并移动`.git`目录
+  - 更新远程仓库地址和分支跟踪
+  - 强制重置到远程分支的最新状态
+  - 拉取最新代码
+  - 设置目录权限
+  - 创建新目录
+  - 克隆仓库
+  - 拉取最新代码
+  - 设置目录权限
+  - 运行`pnpm i`和`pnpm run build`命令
+
+1. 脚本使用`sudo`命令执行某些操作，这需要管理员权限 
+2. 最后，脚本设置目录的所有者为"www"用户和组，这通常用于web服务器配置。
+
+这个脚本的主要目的是自动化 Git 项目的部署过程，包括克隆仓库、更新代码、设置权限等步骤。它还包含了一些错误处理和条件逻辑，以适应不同的情况（如项目目录是否已存在）
+
+---
+此文自动发布于：<a href="https://github.com/coderPerseus/blog/issues/12" target="_blank">github issues</a>

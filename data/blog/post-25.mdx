@@ -1,0 +1,303 @@
+---
+title: 面向对象编程 vs 函数式编程
+date: 2024-11-10T13:40:57Z
+slug: post-25
+author: chaseFunny：https://github.com/chaseFunny
+tags: ["编码规范","基础知识"]
+---
+
+## 什么是面向对象与函数式编程？
+
+编程范式主要分为面向对象编程（Object-Oriented Programming，简称OOP）和函数式编程（Functional Programming，简称FP）。理解这两种编程范式，有助于我们选择合适的方式来解决问题，提高代码的可维护性和扩展性
+
+### 面向对象编程
+
+它是属于 **命令式编程** ，命令式编程还包含了过程式编程。面向对象编程是一种以对象为中心的编程范式，它将数据和操作数据的方法组织在对象中，特点如下：
+
+- 封装：将数据和方法捆绑在一个对象内部，对外只暴露必要的信息，通过访问控制保护数据的完整性
+- 继承：允许类重用其他类的代码，通过不断抽象，减少重复代码
+- 多态：同一个接口可以有多种实现，对象可以根据上下文采取不同的形态来提高代码的灵活性和可扩展性
+
+### 函数式编程
+
+它属于声明式编程，它还包含了逻辑式编程、数学编程及响应式编程等方式。函数式编程是一种以函数为核心的编程范式，例如我们经常听到的”函数是一等公民“，它的特点如下：
+
+- 纯函数：相同输入始终产生相同输出，没有副作用，不依赖外部状态
+- 不可变性：数据一旦创建就不可变，修改数据就返回新的数据
+- 高阶函数：函数可以作为参数和返回值
+
+# 面向对象编程体验
+
+下面我们使用面向对象编程思想来做一个 Todo List
+
+代码我放到代码小抄：https://www.codecopy.cn/post/81sxun
+
+因为是一个 HTML 代码，大家可以直接运行调试，我们来看一下 JavaScript 代码部分:
+
+```js
+      // Todo 项类
+      class TodoItem {
+        constructor(id, text, completed = false) {
+          this.id = id;
+          this.text = text;
+          this.completed = completed;
+        }
+
+        toggle() {
+          this.completed = !this.completed;
+        }
+      }
+
+      // Todo 列表管理类
+      class TodoList {
+        constructor() {
+          this.todos = [];
+          this.loadFromLocalStorage();
+        }
+
+        addTodo(text) {
+          const id = Date.now();
+          const todo = new TodoItem(id, text);
+          this.todos.push(todo);
+          this.saveToLocalStorage();
+          return todo;
+        }
+
+        removeTodo(id) {
+          this.todos = this.todos.filter((todo) => todo.id !== id);
+          this.saveToLocalStorage();
+        }
+
+        toggleTodo(id) {
+          const todo = this.todos.find((todo) => todo.id === id);
+          if (todo) {
+            todo.toggle();
+            this.saveToLocalStorage();
+          }
+        }
+
+        saveToLocalStorage() {
+          localStorage.setItem("todos", JSON.stringify(this.todos));
+        }
+
+        loadFromLocalStorage() {
+          const stored = localStorage.getItem("todos");
+          if (stored) {
+            const parsedTodos = JSON.parse(stored);
+            this.todos = parsedTodos.map((todo) => new TodoItem(todo.id, todo.text, todo.completed));
+          }
+        }
+      }
+
+      // Todo 应用类
+      class TodoApp {
+        constructor() {
+          this.todoList = new TodoList();
+          this.render();
+        }
+
+        addTodo() {
+          const input = document.getElementById("todoInput");
+          const text = input.value.trim();
+
+          if (text) {
+            this.todoList.addTodo(text);
+            input.value = "";
+            this.render();
+          }
+        }
+
+        removeTodo(id) {
+          this.todoList.removeTodo(id);
+          this.render();
+        }
+
+        toggleTodo(id) {
+          this.todoList.toggleTodo(id);
+          this.render();
+        }
+
+        render() {
+          const todoListElement = document.getElementById("todoList");
+          todoListElement.innerHTML = "";
+
+          this.todoList.todos.forEach((todo) => {
+            const li = document.createElement("li");
+            li.className = `todo-item ${todo.completed ? "completed" : ""}`;
+
+            const checkbox = document.createElement("input");
+            checkbox.type = "checkbox";
+            checkbox.checked = todo.completed;
+            checkbox.onclick = () => this.toggleTodo(todo.id);
+
+            const text = document.createElement("span");
+            text.textContent = todo.text;
+
+            const deleteButton = document.createElement("button");
+            deleteButton.className = "delete-btn";
+            deleteButton.textContent = "删除";
+            deleteButton.onclick = () => this.removeTodo(todo.id);
+
+            li.appendChild(checkbox);
+            li.appendChild(text);
+            li.appendChild(deleteButton);
+            todoListElement.appendChild(li);
+          });
+        }
+      }
+
+      // 初始化应用
+      const todoApp = new TodoApp();
+
+      // 添加回车键支持
+      document.getElementById("todoInput").addEventListener("keypress", function (e) {
+        if (e.key === "Enter") {
+          todoApp.addTodo();
+        }
+      });
+```
+
+这里我们创建了三个类，分别是：TodoItem 类：表示一个待办事项，包含ID、文本和完成状态。提供切换完成状态的方法；TodoList 类：管理待办事项的列表，提供添加、删除和切换完成状态的方法。数据持久化到本地存储等方法。TodoApp 类：负责UI渲染和用户交互，包括添加、删除和切换待办事项的完成状态。我们通过抽象这个功能为三个类，每个类来实现单一的逻辑，然后外层调用里层的类，**就像洋葱一样，把复杂的逻辑封装在了里面**。使用者无需关心怎么实现的，只需要知道怎么使用就好了
+
+# 函数式编程体验
+
+完整代码还在这里：https://www.codecopy.cn/post/81sxun
+
+```js
+ // 创建新的 todo 项
+      const createTodo = (text) => ({
+        id: Date.now(),
+        text,
+        completed: false,
+      });
+
+      // 切换 todo 完成状态
+      const toggleTodo = (todo) => ({
+        ...todo,
+        completed: !todo.completed,
+      });
+
+      // 过滤删除指定 todo
+      const removeTodoById = (todos, id) => todos.filter((todo) => todo.id !== id);
+
+      // 添加新的 todo
+      const addTodo = (todos, text) => [...todos, createTodo(text)];
+
+      // 切换指定 todo 的状态
+      const toggleTodoById = (todos, id) => todos.map((todo) => (todo.id === id ? toggleTodo(todo) : todo));
+
+      // 本地存储操作
+      const storage = {
+        save: (todos) => localStorage.setItem("todos", JSON.stringify(todos)),
+        load: () => JSON.parse(localStorage.getItem("todos") || "[]"),
+      };
+
+      // 渲染函数
+      const renderTodos = (todos, handlers) => {
+        const todoList = document.getElementById("todoList");
+        todoList.innerHTML = "";
+
+        const createTodoElement = (todo) => {
+          const li = document.createElement("li");
+          li.className = `todo-item ${todo.completed ? "completed" : ""}`;
+
+          const checkbox = document.createElement("input");
+          checkbox.type = "checkbox";
+          checkbox.checked = todo.completed;
+          checkbox.onchange = () => handlers.onToggle(todo.id);
+
+          const text = document.createElement("span");
+          text.textContent = todo.text;
+
+          const deleteButton = document.createElement("button");
+          deleteButton.className = "delete-btn";
+          deleteButton.textContent = "删除";
+          deleteButton.onclick = () => handlers.onDelete(todo.id);
+
+          li.appendChild(checkbox);
+          li.appendChild(text);
+          li.appendChild(deleteButton);
+          return li;
+        };
+
+        todos.forEach((todo) => {
+          todoList.appendChild(createTodoElement(todo));
+        });
+      };
+
+      // 应用状态管理
+      const createTodoApp = () => {
+        let todos = storage.load();
+
+        const updateState = (newTodos) => {
+          todos = newTodos;
+          storage.save(todos);
+          render();
+        };
+
+        const handlers = {
+          onAdd: (text) => {
+            if (text.trim()) {
+              updateState(addTodo(todos, text));
+            }
+          },
+          onToggle: (id) => {
+            updateState(toggleTodoById(todos, id));
+          },
+          onDelete: (id) => {
+            updateState(removeTodoById(todos, id));
+          },
+        };
+
+        const render = () => renderTodos(todos, handlers);
+
+        // 初始渲染
+        render();
+
+        return handlers;
+      };
+
+      // 初始化应用
+      const app = createTodoApp();
+
+      // 事件监听设置
+      document.getElementById("addButton").addEventListener("click", () => {
+        const input = document.getElementById("todoInput");
+        app.onAdd(input.value);
+        input.value = "";
+      });
+
+      document.getElementById("todoInput").addEventListener("keypress", (e) => {
+        if (e.key === "Enter") {
+          const input = document.getElementById("todoInput");
+          app.onAdd(input.value);
+          input.value = "";
+        }
+      });
+```
+
+ 通过上面的代码，可以看到所有的逻辑都是使用函数完成的，通过纯函数和不可变性提高了代码的可预测性和可维护性。但是相比较面向对象编程的代码可能没有那么清晰
+
+
+
+# 面向对象 VS 函数式
+
+通过上面的代码，可以很直观的看到他们各自的优缺点，我们再对比总结一下：
+
+- 代码组织方式上：OOP 是基于对象，把数据和对应的行为封装在一起，通过类来管理代码；FP 是围绕函数来得到新的数据，数据和行为是分开的
+- 状态管理上：OOP 是对象内部进行维护，通过类的方法来更新对象状态，并且状态变化可能会导致副作用；FP是通过函数返回新的数据（状态），来强调的数据不可变性
+- 代码复用上：OOP 就是通过继承来实现代码复用；FP 就是通过组合函数来实现代码复用
+- 使用场景上：OOP 适合有明确的对象和对应行为的系统，需要复杂状态管理；FP 适合业务开发，并发编程，数据转换和计算
+
+我们再来看一下前端中知名的库使用的编程范式，Vue2.x 就是基于面向对象编程，React 18之前的类组件也是基于面向对象编程，每一个组件其实都是一个对象。但是在 React 18之后，就改为了函数式编程和自定义hooks，是因为类组件中复用逻辑非常麻烦，需要借助 HOC（高阶组件），但是高阶组件会创建没有必要的组件树，会产生嵌套地狱，调试也变得困难，知道 自定义 hooks 的出现，让 React 组件复用逻辑变得非常简单，我觉得最重要的点是 类组件 并没有使用到 class 的特性，我们并没有使用到封装、继承等等特性。
+
+技术没有银弹，哪种编程方式都有弊端，只有都熟练使用才能在遇到问题选择出合适的编码方式，写出优雅的代码
+
+# 参考
+
+1）为什么面向对象和函数式编程都有问题：https://github.com/AlexiaChen/YinWangBak/blob/master/%E4%B8%BA%E4%BB%80%E4%B9%88%E8%AF%B4%E9%9D%A2%E5%90%91%E5%AF%B9%E8%B1%A1%E7%BC%96%E7%A8%8B%E5%92%8C%E5%87%BD%E6%95%B0%E5%BC%8F%E7%BC%96%E7%A8%8B%E9%83%BD%E6%9C%89%E9%97%AE%E9%A2%98.md
+
+
+
+---
+此文自动发布于：<a href="https://github.com/coderPerseus/blog/issues/25" target="_blank">github issues</a>

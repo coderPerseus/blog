@@ -1,0 +1,55 @@
+---
+title: github 源码阅读神器 deepwiki，自动生成源码架构图和知识库
+date: 2025-04-26T09:42:07Z
+slug: post-65
+author: coderPerseus：https://github.com/coderPerseus
+tags: ["AI","经验","效率提升","源码阅读"]
+---
+
+ 大家好，我是 luckysnail ，今天看到了一个我之前想要做的 AI 产品，就是基于 github 仓库生成对应的教程文档。给大家看一下我之前记录的：
+![image.png](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/jike/20250426173950337.png)
+
+ 没想到已经有知名的公司 https://devin.ai/ 做了，就是创造首个 AI 软件工程师 Devin 的公司。它目前完全免费，无需注册即可使用。下面来看看 DeepWiki 的能力
+
+## 什么是 DeepWiki？
+
+DeepWiki是由 Cognition Labs 推出的创新项目，旨在为全球每一个 GitHub 代码仓库提供**实时交互式文档**。简单来说，它是一个由 AI 驱动的 GitHub 版本“百科全书”，能够让你与对应仓库的专家进行对话，帮助你快速了解上手项目。
+
+这个工具的特点是：
+
+- **完全免费**：对开源项目无需注册即可使用
+    
+- **即时访问**：只需修改GitHub链接就能跳转到对应Wiki
+    
+- **智能问答**：可以直接向代码库“提问”并获得专业解答
+    
+- **深度分析**：能揭示代码库的隐藏结构和开发模式
+
+## 基础能力
+
+使用它非常简单，你可以直接去 ： https://deepwiki.com/  ，然后搜索你想要了解的项目。你也可以在 github 访问一个项目的时候把 github 改为 deepwiki 。然后你会看到：
+![image.png](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/jike/20250426174010912.png)
+
+![image.png](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/jike/20250426174030569.png)
+
+可以看到它会生成项目的文档和架构图，而且下面还可以跟文档进行对话，对话过程中它会实时的检索项目的源码进行回复：
+![image.png](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/jike/20250426174045824.png)
+
+我这里通过我之前学习的 umi-request 源码进行查看，它输出的内容和支持都是非常高，没有错误！感觉以后我学习新的 github 仓库会先到这里来学习，然后再拉取代码进行阅读。
+
+如果你是私有仓库，你需要先登录 Devin 账户，然后进行仓库的知识库生成
+## 结语
+
+deepwiki 目前已索引约3万个GitHub仓库，处理超过40亿行代码 。无论是对于新手小白想要学习 github 仓库，还是对应经验丰富的软件工程师都是有很大的帮助，大大节省了我们理解项目的成本
+
+
+## 广告
+
+如果你想要学习编程、找工作、准备面试，请后台私信我，这里有丰富的资源和工具帮你更快更好的成为一个好的程序员，还有丰厚福利：
+
+- 编程导航会员优惠
+- 面试鸭会员优惠
+- 冴羽的【前端大佬成长之路】优惠
+
+---
+此文自动发布于：<a href="https://github.com/coderPerseus/blog/issues/65" target="_blank">github issues</a>

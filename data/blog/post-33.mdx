@@ -1,0 +1,267 @@
+---
+title: 实现一个前端开发都使用过的工具
+date: 2024-12-15T14:55:36Z
+slug: post-33
+author: chaseFunny：https://github.com/chaseFunny
+tags: ["AI","前端开发","nodeJs"]
+---
+
+> 如何使用 Node.js 实现一个类似 VSCode Live Server 的本地静态资源服务器。通过 HTTP 模块搭建基础服务器，结合 livereload 和 connect-livereload 实现文件热更新功能。
+
+最近在系统学习 nodejs，学到 http 模块的时候，想着写个东西熟悉一下相关的 API，那写个什么呢？也不知道怎么得鼠标点击了一下右键发现了它 ，相信每个前端都不会陌生，我们最开始学习前端都会安装的插件：https://open-vsx.org/extension/ritwickdey/LiveServer  ，它能帮我们启动具有**静态**和**动态页面实时重新加载**功能的**本地开发服务器**。
+
+![image-20241215213702976](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/work/image-20241215213702976.png)
+
+我们一般都会使用它来打开我们的 html 文件，使用它启动有很多好处：
+
+- 实时预览，文件更改自动刷新游览器，支持静态和动态页面的实时更新
+- 解决不能访问本地文件问题
+- 使用简单，点击一键启动服务
+
+这么神奇的能力，其实实现也很简单，今天就借助 node 来实现一个阉割版本的 liveServer，
+
+## 需求分析
+
+先不急写代码，让我们先分析一下我们要如何实现一个简易版的 liveServer，也就是需求分析，梳理清楚我们的实现思路，这样写代码也就水到渠成，很简单了，而且这样还有一个非常大的好处，我们后面说。实现思路：
+
+1. 创建一个 http 服务器
+2. 当启动服务器后，用户访问服务器不同的路由，也就是访问我们本地对应文件夹下的静态资源
+3. 首先我们需要把 url 的路径，转为我们本地资源的路径
+4. 然后我们需要判断是否存在这个文件，如果存在则读取返回
+5. 如果不存在，需要再次判断**是否是目录**，如果是目录，则判断下面是否有默认文件 `index.html` ，如果有则返回文件内容，没有则返回 404
+6. 如果不是目录，和文件不存在逻辑一致，返回 404
+7. 这样我们就完成了基本的一个静态资源服务器，但是还有几个细节需要处理
+
+1）我们静态资源放在哪里才能被正确读取？ 
+
+2）当读取的文件后缀不同，如何也做不同的展示形式
+
+3）如何实现静态资源更新网页也实时进行热更新
+
+## 功能实现
+
+已经知道要干什么了，我们先完成初始功能代码：
+
+```js
+// 搭建本地静态资源服务器
+
+const http = require("http");
+const fs = require("fs");
+const path = require("path");
+
+// 记录请求和错误
+/**
+ * 记录请求和错误
+ * @param {string} message - 要记录的信息
+ */
+const log = (message) => {
+    console.log(new Date().toISOString() + ': ' + message);
+};
+
+/**
+ * 处理请求路径并返回文件路径
+ * @param {string} p - 请求路径
+ * @returns {string} - 解析后的文件路径
+ */
+const resolvePath = (p) => {
+    // 去除开头的 /
+    const filePath = p.startsWith("/") ? p.slice(1) : p;
+    //  assets 文件夹作为根目录
+    const fullPath = path.join(__dirname, "../assets", filePath);
+    // 如果文件不存在
+    if (!fs.existsSync(fullPath)) {
+        log(`File not found: ${fullPath}`);
+        return null;
+    }
+    return fullPath;
+};
+
+/**
+ * 获取文件的内容类型
+ * @param {string} filePath - 文件路径
+ * @returns {string} - 内容类型
+ */
+const getContentType = (filePath) => {
+    const ext = path.extname(filePath);
+    switch (ext) {
+        case '.html': return 'text/html;charset=utf-8';
+        case '.css': return 'text/css;charset=utf-8';
+        case '.js': return 'application/javascript;charset=utf-8';
+        case '.json': return 'application/json;charset=utf-8';
+        default: return 'application/octet-stream';
+    }
+};
+
+/**
+ * 处理接受的请求和发送合适的响应
+ * @param {*} req HTTP 请求的请求对象，包含标头、正文和查询参数等属性。
+ * @param {*} res 响应对象用于将响应发送回客户端，允许您设置状态代码和响应数据。 
+ */
+const handler = (req, res) => {
+    const filePath = resolvePath(req.url);
+    if (filePath) {
+        // 如果文件存在
+        if (fs.statSync(filePath).isFile()) {
+            // 读取文件
+            fs.readFile(filePath, (err, data) => {
+                if (err) {
+                    log(`Error reading file: ${filePath} - ${err.message}`);
+                    res.statusCode = 500;
+                    res.end('500 Internal Server Error');
+                    return;
+                }
+                // 设置状态码和响应头
+                res.statusCode = 200;
+                res.setHeader("Content-Type", getContentType(filePath));
+                // 发送响应
+                res.end(data);
+            });
+            return;
+        } else if (fs.statSync(filePath).isDirectory()) {
+            // 如果是目录
+            //  index.html 作为目录的默认文件
+            const indexPath = path.join(filePath, "index.html");
+            if (fs.existsSync(indexPath)) {
+                // 读取 index.html
+                fs.readFile(indexPath, (err, data) => {
+                    if (err) {
+                        log(`Error reading index file: ${indexPath} - ${err.message}`);
+                        res.statusCode = 500;
+                        res.end('500 Internal Server Error');
+                        return;
+                    }
+                    // 设置状态码和响应头
+                    res.statusCode = 200;
+                    res.setHeader("Content-Type", getContentType(indexPath));
+                    // 发送响应
+                    res.end(data);
+                });
+                return;
+            }
+        }
+    }
+    // 如果文件不存在
+    res.statusCode = 404;
+    res.setHeader("Content-Type", "text/html;charset=utf-8");
+    res.end("404 Not Found");
+};
+
+const server = http.createServer(handler);
+
+server.listen(3003, () => {
+    log('Server running at http://localhost:3003');
+});
+```
+
+这里我们解决了 1 和 2 两个问题，我们约定了上一级的 assets 为静态资源存放地点，所以我们需要约定式的把要静态资源放在对应的位置；我们 getContentType 函数读取访问资源的后缀，来设置 `Content-Type` ，从而实现不同资源展示不同形式
+
+那如何实现热更新呢？
+
+## 热更新
+
+这里我们需要安装依赖来实现了，我们需要借助 `livereload` 和 `connect-livereload` ，使用 express 来搭建一个静态资源访问服务器，我们使用 `livereload` 创建一个服务器来监控文件变化，并使用 `connect-livereload` 中间件在 HTML 文件中注入 LiveReload 脚本，也就实现了实时静态服务器
+
+```js
+const fs = require("fs");
+const path = require("path");
+const livereload = require("livereload");
+const connectLivereload = require("connect-livereload");
+const express = require("express");
+
+// 创建 Express 应用
+const app = express();
+
+// 使用 connect-livereload 中间件
+app.use(connectLivereload());
+
+// 记录请求和错误
+const log = (message) => {
+  console.log(new Date().toISOString() + ": " + message);
+};
+
+// 处理请求路径并返回文件路径
+const resolvePath = (p) => {
+  const filePath = p.startsWith("/") ? p.slice(1) : p;
+  const fullPath = path.join(__dirname, "assets", filePath);
+  if (!fs.existsSync(fullPath)) {
+    log(`File not found: ${fullPath}`);
+    return null;
+  }
+  return fullPath;
+};
+
+// 获取文件的内容类型
+const getContentType = (filePath) => {
+  const ext = path.extname(filePath);
+  switch (ext) {
+    case ".html":
+      return "text/html;charset=utf-8";
+    case ".css":
+      return "text/css;charset=utf-8";
+    case ".js":
+      return "application/javascript;charset=utf-8";
+    case ".json":
+      return "application/json;charset=utf-8";
+    default:
+      return "application/octet-stream";
+  }
+};
+
+// 处理接受的请求和发送合适的响应
+app.get("*", (req, res) => {
+  const filePath = resolvePath(req.url);
+  if (filePath) {
+    if (fs.statSync(filePath).isFile()) {
+      fs.readFile(filePath, (err, data) => {
+        if (err) {
+          log(`Error reading file: ${filePath} - ${err.message}`);
+          res.status(500).send("500 Internal Server Error");
+          return;
+        }
+        res.status(200).type(getContentType(filePath)).send(data);
+      });
+    } else if (fs.statSync(filePath).isDirectory()) {
+      const indexPath = path.join(filePath, "index.html");
+      if (fs.existsSync(indexPath)) {
+        fs.readFile(indexPath, (err, data) => {
+          if (err) {
+            log(`Error reading index file: ${indexPath} - ${err.message}`);
+            res.status(500).send("500 Internal Server Error");
+            return;
+          }
+          res.status(200).type(getContentType(indexPath)).send(data);
+        });
+      }
+    }
+  } else {
+    res.status(404).type("text/html;charset=utf-8").send("404 Not Found");
+  }
+});
+
+// 创建 LiveReload 服务器并监控 assets 目录
+const liveReloadServer = livereload.createServer();
+liveReloadServer.watch(path.join(__dirname, "assets"));
+
+// 启动服务器
+const PORT = 3003;
+app.listen(PORT, () => {
+  log(`Server running at http://localhost:${PORT}`);
+});
+```
+
+如果你要尝试的话，记得 `npm init -y` ，然后安装依赖：`npm i express livereload connect-livereload`
+
+现在我们再启动，就是一个实时静态服务器了
+
+这个工具虽然简单，但是里面的知识还是很多的：
+
+- 使用 http 模块搭建服务器
+- 使用 path 解析请求路径
+- 使用 fs 模块进行文件的校验，读取
+- 通过拆解需求，来模块化进行开发，让代码好阅读和理解
+-  最后的引入两个依赖基于 express 搭建一个静态资源服务器
+
+最后，如果你把我们上面的需求分析喂给 AI ，它大概率也能给出正确的代码，AI 时代了解知识并且知道如何通过知识解决问题的能力变得尤为重要
+
+---
+此文自动发布于：<a href="https://github.com/coderPerseus/blog/issues/33" target="_blank">github issues</a>

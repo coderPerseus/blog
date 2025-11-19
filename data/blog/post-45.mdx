@@ -1,0 +1,291 @@
+---
+title: 搭建前端脚手架（上）
+date: 2025-02-04T07:42:07Z
+slug: post-45
+author: chaseFunny：https://github.com/chaseFunny
+tags: ["前端工程化"]
+---
+
+在学习 Vue 或者 React 的时候，我们应该都使用过它们的脚手架工具（[create-vue](https://github.com/vuejs/create-vue)、[create-react-app](https://github.com/facebook/create-react-app)）。通过脚手架我们能够快速得到一个 Vue 或者 React 项目，我们无需将经历花在了项目基础骨架搭建上，能够更加快速的开发业务
+
+> 为了让大家更好明白，我尝试通过场景来一步步讲明白脚手架搭建里面的”门道“，在场景中主人公 - 阿牛，一个不太会写代码的前端开发
+
+## 脚手架是什么？
+
+在开发自己的脚手架前，我们再认识一下脚手架吧！脚手架是：”一种工具或框架，用于快速生成项目的基础结构、配置文件和代码模板。它通常包含了一些预定义的目录结构、配置文件、依赖管理工具、构建工具等。脚手架的主要目的是减少重复劳动，提高开发效率，并确保项目结构的一致性。“
+
+在前端开发中，脚手架工具通常会帮助我们完成以下任务：
+
+- 初始化项目目录结构
+- 配置开发环境（如 Webpack、Babel、ESLint 等）
+- 集成常用的库和工具（如 Vue、React、TypeScript 等）
+- 提供代码模板和最佳实践
+
+使用脚手架，我们会得到一个预期的模版项目，这里已经集成了我们需要的基础设施
+
+
+
+## 脚手架解决了什么问题？
+
+1. **初始化项目繁琐**：手动创建项目目录、配置文件、安装依赖等步骤非常耗时且容易出错。脚手架可以自动化这些步骤，一键生成项目骨架。
+2. **统一开发规范**：每个团队都有自己的代码风格、目录结构和依赖管理方式。脚手架可以强制执行这些规范，确保团队成员在统一的环境下工作。
+3. **提高开发效率**：通过预先配置好的开发环境、构建流程和测试框架，脚手架可以大大提高开发效率，让开发者专注于业务逻辑的实现。
+4. **减少重复劳动**：在多个项目中使用相同的配置和依赖时，脚手架可以避免重复劳动，提高代码复用率。
+5. **降低学习成本**：对于新手开发者，脚手架可以提供一个清晰的项目结构和最佳实践，降低学习成本。
+6. **团队技术沉淀**：团队如果多个项目，在 A 项目实现了 B 功能，在 C 项目也需要，这时候沉淀到脚手架是一个更好的推广的方式，能够减少团队重复劳动，提高效率
+7. **最佳实践沉淀**：当我们把一些配置，能力集成到脚手架会让我们思考这是不是最佳实现，是不是适合团队等等代码规范问题
+
+
+
+## 这些时候我们不需要脚手架
+
+- 现有脚手架已经满足我们的需求
+- 项目很简单，手动创建项目就是更好的选择
+- 团队规模小，技术栈很统一，大家都熟悉项目开发规范，就不需要脚手架，额外添加了流程
+- 时间资源少，这时候就不要搭建脚手架了，因为维护脚手架也需要成本
+
+## 快速跑通一个脚手架搭建核心流程
+
+### 梳理需求
+
+我们目标就是开发出一个类似 vue cli 的脚手架工具，使用我们自己的脚手架工具来下载我们远程 github 的仓库代码，我们可以先体验一下 create-vue ，运行：
+
+```bash
+npm create vue@latest
+```
+
+![image-20250202165310697](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/work/image-20250202165310697.png)
+
+我们根据交互会得到一个基础的项目模板，简单分析一下，主要为三个步骤：
+
+1. 用户在终端运行 npm create xxx ，然后下载一个脚手架包
+2. 下载完成后，就会在终端运行一个交互页面，通过一步步的交互，最终我们会得到一个我们想要的包
+3. 用户执行完交互逻辑，安装对应的代码到本地，这里我们需要给到友好的下载进度提示和安装完成后的一些提示
+
+### 功能开发
+
+#### 第一步
+
+我们按照我们分析的步骤一个个开发，最后再优化，我们先来开发第一步(项目名为 create-lucky，注意如果我们希望通过  npm create 来创建项目，项目名称必须以 create- 开头)。
+
+```bash
+# 创建文件夹并进入
+mkdir create-lucky && cd create-lucky
+# 初始化 package.json 和 index.js
+npm init -y && nano index.js
+# 然后我们在 index.js 输入如下代码，注意 第一行必须是 #!/usr/bin/env node
+#!/usr/bin/env node
+
+console.log("Hello from create-lucky!");
+
+# 为了让 index.js 文件可以被执行，需要添加执行权限，然后我们运行 
+chmod +x index.js
+
+# 然后我们需要修改一下 package.json
+"main": "src/index.js",
+"bin": {
+  "create-lucky": "src/index.js"
+},
+
+# 本地测试，我们运行 npm link
+npm link
+
+# 在任意目录下，运行以下命令来测试脚手架
+npm create lucky
+
+# 发布1，先检查 npm register 是否为：https://registry.npmjs.org/
+npm get registry
+
+# 发布2，如果没有注册 npm 账号，需要先注册，根据提示你输入用户名、密码和邮箱。
+npm login
+
+# 发布3，发布到 npm
+npm publish
+
+# 检查发布是否成功，可能有十秒延迟，我们去 https://www.npmjs.com/~luckysnail ，这里 luckysnail 是你的 npm 账号名
+
+# 本地运行 npm create lucky ，验证效果
+```
+
+![image-20250202173927965](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/work/image-20250202173927965.png)
+
+看到这样，证明第一步就完成了！
+
+
+
+#### 第二步
+
+这一步，我们需要在终端创建一个交互，来让用户使用脚手架安装想要的项目
+
+```bash
+# 引入 inquirer：命令行界面与用户交互的库
+npm i inquirer
+# 更新 src/index.js 代码
+
+#!/usr/bin/env node
+
+const inquirer = require("inquirer");
+
+async function main() {
+  const answers = await inquirer.default.prompt([
+    {
+      type: "list",
+      name: "template",
+      message: "请选择你想要使用的模板:",
+      choices: ["Vue", "React", "React19", "NextJs"],
+    },
+    {
+      type: "input",
+      name: "customUrl",
+      message: "请输入项目名称:",
+    },
+  ]);
+
+  let packageUrl = "";
+  if (answers.template === "custom-app") {
+    packageUrl = answers.customUrl;
+  } else {
+    packageUrl = `https://github.com/your-org/${answers.template}`;
+  }
+
+  console.log(`你选择的包地址是: ${packageUrl}`);
+}
+
+main();
+# 重新 npm link 然后测试，没有问题，就 publish 再测试一下
+```
+
+inquirer 更多使用方法：https://www.npmjs.com/package/inquirer
+
+#### 第三步
+
+最后一步，我们就需要根据用户的选择，然后生成对应的代码
+
+```bash
+# 安装需要的库，chalk：终端字体样式；ora：显示loading动画效果；download-git-repo：下载并提取git仓库
+npm i chalk ora download-git-repo
+
+# src/constants.js 定义常量
+/** 项目列表 */
+export const PROJECT_LIST = [
+  {
+    name: "vue",
+    desc: "vue3 + pinia + vue-router",
+    value: "https://github.com/axin-s-Template/vue-light-starter.git",
+  },
+  {
+    name: "React19",
+    desc: "React 19 + Tailwind 3 + Biome + RSBuild + shadui/cn 轻量启动模版",
+    value: "https://github.com/axin-s-Template/react19-light-starter",
+  },
+  {
+    name: "React",
+    desc: "react 轻量模版（适合开发简单应用），使用 Vite + TypeScript + TailwindCss + shadcn/ui + Zustand + react-router-dom 的简单 SPA 启动模版",
+    value: "https://github.com/axin-s-Template/react-light-starter",
+  },
+  {
+    name: "NextJs",
+    desc: "Next.js 14+ 基础启动模板",
+    value: "https://github.com/axin-s-Template/Nextjs-Boilerplate",
+  },
+];
+
+# 设置 package.json 的 "type": "module",
+
+# 更新 src/index.js
+#!/usr/bin/env node
+
+import inquirer from "inquirer";
+import chalk from "chalk";
+import ora from "ora";
+import { promisify } from "util";
+import downloadGitRepo from "download-git-repo";
+import { PROJECT_LIST } from "./constants.js";
+
+const download = promisify(downloadGitRepo);
+
+async function main() {
+  const answers = await inquirer.prompt([
+    {
+      type: "list",
+      name: "template",
+      message: "请选择你想要使用的模板:",
+      choices: PROJECT_LIST.map((item) => ({
+        name: `${item.name} - ${item.desc}`,
+        value: item.name.toLowerCase(),
+      })),
+    },
+    {
+      type: "input",
+      name: "projectName",
+      message: "请输入项目名称:",
+      validate: (input) => {
+        if (!input.trim()) {
+          return "项目名称不能为空";
+        }
+        return true;
+      },
+    },
+  ]);
+
+  const selectedTemplate = PROJECT_LIST.find((item) => item.name.toLowerCase() === answers.template);
+
+  if (!selectedTemplate) {
+    console.log(chalk.red("未找到选择的模板"));
+    return;
+  }
+
+  const spinner = ora("正在下载模板...").start();
+
+  try {
+    const repoUrl = selectedTemplate.value.replace("https://github.com/", "").replace(".git", "");
+    await download(repoUrl, answers.projectName);
+    spinner.succeed(chalk.green("模板下载成功！"));
+    console.log(chalk.blue("\n开始使用:"));
+    console.log(chalk.cyan(`  cd ${answers.projectName}`));
+    console.log(chalk.cyan("  npm install"));
+    console.log(chalk.cyan("  npm run dev\n"));
+  } catch (err) {
+    spinner.fail(chalk.red("下载失败：" + err.message));
+    process.exit(1);
+  }
+}
+
+main().catch((err) => {
+  console.error(chalk.red(err));
+  process.exit(1);
+});
+```
+
+这里，我们运行 node ./src/index.js ，如果看到这样就证明没有问题啦！
+
+![image-20250204150625035](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/work/image-20250204150625035.png)
+
+到这里，我们基础的脚手架就算是搭建完成了！我们可以发布到npm 仓库，然后再试试，记得先运行 `npm unlink create-lucky`。然后我们在运行 `npm create lucky` ，记得每次发布的时候去 package.json 中修改 version
+
+### 优化
+
+目前这一版本的脚手架工具其实还有很多缺点：
+
+- 使用 js ，不好维护，脚手架本来就是团队才需要的，所以脚手架的代码，可能是要规范的
+- 目前测试麻烦，使用 npm link 来进行测试，测试完成需要 npm unlink 来取消 link
+- 开发一个命令行工具，连命令参数能力都没有，例如 -v  --help 等等都是必须的
+- 不支持动态生成项目的一些信息，例如：我希望通过模版创建的时候就把这个项目的基础信息（项目名称，描述等）都初始化好
+- 终端不够美观，炫酷，这个反倒是很重要的，别人使用你的脚手架第一印象就是终端效果
+
+所以，我们可以使用 monorepo  + @clack/prompt 来进行优化一版本
+
+- 使用 monorepo 来更好的维护代码和验证效果
+- 使用 @clack/prompt 来提供更加美观炫酷的终端交互
+
+关于优化，我会再写一篇！
+
+## 总结
+
+首先感谢你看到这里，看到着你说明你也认为搭建自己的脚手架是有价值的。在我看来脚手架的价值有两个：
+
+1. 从个人来讲：我觉得脚手架对个人来讲收益是最大的，因为在开发脚手架过程中，你会得到你自己认为的最佳实践，你会搭建出自己的开发规范，这培养了个人的工程化思维，追求极致的思想。
+2. 对他人来讲：他人能够通过你的脚手架快速搭建出一个项目骨架。使用你的最佳实践，为他节省了时间。所以在开发完成后，我们需要写文档来推广我们的脚手架
+
+---
+此文自动发布于：<a href="https://github.com/coderPerseus/blog/issues/45" target="_blank">github issues</a>

@@ -1,0 +1,121 @@
+---
+title: Taro3 + react 项目如何使用 towxml 在微信小程序渲染和优化 markdown
+date: 2024-09-26T15:17:39Z
+slug: post-19
+author: chaseFunny：https://github.com/chaseFunny
+tags: ["bug","微信小程序"]
+---
+
+首先，我们参考官方教程，生成我们想要的 dist 文件 https://github.com/sbfkcel/towxml/wiki/3.0-%E6%9E%84%E5%BB%BATowxml
+
+然后，我们把文件放到我们项目 src 下，我们正常引入使用即可，这时候，我们会发现 towxml 尤两个问题：
+
+1. 代码没有高亮
+2. 图片不能点击放大
+
+我们解决一下这两个问题
+
+## 代码不能高亮
+
+这个问题解决其实非常简单，在解决前，我们先看一下为什么不生效，我们是可以发现 markdown 解析其他都是正常的，但就是代码高亮不生效，那么肯定就是代码高亮的样式没有生效，我们找一下代码高亮的样式，发现在这里：
+
+![CleanShot 2024-09-26 at 23.06.15@2x](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/typora/CleanShot%202024-09-26%20at%2023.06.15@2x.png)
+
+发现这里是使用导入的方式，可鞥就是这个问题，我们只需要把对应的 wxss 代码复制过来，不使用导入的形式就好了，
+
+对了，如果你觉得默认的样式不好，那么我们还可以去 https://highlightjs.org/examples 找一个满意的样式，然后把对应的源码复制替换默认的即可
+
+## 图片不能预览
+
+这个不算是 bug，towxml 本身就是没有做这个能力，我们实现也很简单，towxml 提供了绑定事件的能力，我们只需要为图片绑定点击事件，然后为在点击的时候，调用微信的预览图片功能即可
+
+```tsx
+ <towxml
+  nodes={towxml(value, "markdown", {
+    events: {
+      tap: (event) => {              
+        const dataSetData = safeGet(
+          event,
+          "currentTarget.dataset.data",
+          ""
+        );
+        if (
+          dataSetData &&
+          dataSetData.attrs &&
+          safeGet(dataSetData, "attrs.class", "") === "h2w__img"
+        ) {
+          const imgList = extractImageUrls(value, contentType);
+          const src = safeGet(dataSetData, "attrs.src", "");
+          const previewImageList =
+            imgList && imgList.length && imgList.includes(src)
+              ? imgList
+              : [src];                
+          Taro.previewImage({
+            current: src,
+            urls: previewImageList,
+          });
+        }
+      },
+    },
+  })}
+/>
+// 工具函数
+/**
+ * 安全取值函数
+ * @param object 目标对象
+ * @param path 属性路径
+ * @param defaultVal 默认值
+ * @returns 取得的属性值或默认值
+ */
+export const safeGet = (
+  object: any,
+  path: any,
+  defaultVal: any = undefined
+): any => {
+  let newPath: string[] = [];
+  if (Array.isArray(path)) {
+    newPath = path;
+  } else {
+    newPath = path.replace(/\[/g, ".").replace(/\]/g, "").split(".");
+  }
+  const result = newPath.reduce((o: any, k: string) => {
+    return (o || {})[k];
+  }, object);
+  if ([undefined, null, "undefined", "null", ""].includes(result)) {
+    return defaultVal;
+  }
+  return result;
+};
+/**
+ * 从文本中提取图片链接
+ * @param {string} text 要解析的文本
+ * @param {string} type 文本类型，'markdown' 或 'html'
+ * @returns {string[]} 图片链接数组
+ */
+export const extractImageUrls = (text, type = 1) => {
+  const imgUrls = [];
+  let imgRegex;
+  if (!text) {
+    return imgUrls;
+  }
+  // 根据类型选择合适的正则表达式
+  if (type === 1) {
+    imgRegex = /!\[.*?\]\((.*?)\)/g;
+  } else if (type === 0) {
+    imgRegex = /<img[^ />]*src\s*=\s*['"]?([^'">]+)['"]?[^>]*>/g;
+  } else {
+    throw new Error("Unsupported text type.");
+  }
+  // 使用正则表达式匹配图片链接并加入数组
+  let match;
+  while ((match = imgRegex.exec(text)) !== null) {
+    imgUrls.push(match[1]);
+  }
+  return imgUrls;
+};
+```
+
+好了，这就是在 Taro3 + React 项目中使用 towxml 的问题解决办法！
+
+---
+此文自动发布于：<a href="https://github.com/coderPerseus/blog/issues/19" target="_blank">github issues</a>

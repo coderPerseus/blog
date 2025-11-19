@@ -1,0 +1,59 @@
+---
+title: Next.js 16 来了！对 AI 最友好的开发框架
+date: 2025-10-23T17:31:03Z
+slug: post-82
+author: coderPerseus：https://github.com/coderPerseus
+tags: ["AI","Next.js"]
+---
+
+![image.png](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/typora/20251024013023.png)
+大家好，我是 luckySnail ，Next.js 16 终于来了！我第一次使用 Next.js 是 12 版本，那时候还是使用 Pages Router ，对于 Next.js 我是又爱又恨，一方面它拥有及其丰富的社区生态，一方面它的开发体验不好和发布速度太快，并且存在很多 bug。作为一个普通的开发者，我希望要的是一个稳定，好用，开发构建部署体验好的框架，Next.js 是不二之选，但是 Next.js 在很多地方做的不够好，也促使社区有了 TanStack Start ，Modernjs 这样的竞争者。
+
+##  Next.js 和 AI
+
+这次更新最让我眼前一亮的就是它与 AI 的深度结合，在 Conf 大会上，Next.js 说如果一个 API 设计的让人困惑，那么肯定也会让 AI 困惑，隐藏让开发者体验越好，对大模型也越友好，首先就是 Next.js 发布了 Next Evals ，这是什么呢？这是一个公共基准测试，让我们知道最新的模型和编码 Agent 在使用 Next.js 时候的表现，得分高的就是能按照 Next.js 最佳实践来开发的 Agent
+![image.png](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/typora/20251023233817.png)
+可以看到 gpt-5-codex 得分最高！这里顺带说一下，目前 gpt-5-codex 是我使用最多的大模型，它的编程能力太强～如果你还没有用上那真的太可惜了～
+
+接着就是 Turbopack ，它已经替代 Webpack 成为默认的打包构建工具，在 Agent 循环中，时间都很重要 。Turbopack 的毫秒级的快速刷新对于 Agent 自动编写、测试和发布代码的场景是很重要的，将 Agent 循环的速度提高上千倍，我们也能更加流畅的使用 Codex 这种 AI Agent 工具
+
+下面是我觉得最棒的点，也是 Next.js 被社区诟病的点，当我们使用大模型开发 Next.js 的时候，总是得到过时的资料，于是推出了 **next-devtools-mcp**: https://www.npmjs.com/package/next-devtools-mcp ,我们可以文档知道它能帮我访问最新的文档，最佳实践，并且进行测试和内部调试，下面看一下我在 Claude Code 中使用 这个 MCP 一次就开发出了对应的 API 服务和页面：
+![image.png](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/typora/20251024000722.png)
+下面是进行技术调研：
+![image.png](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/typora/20251024001445.png)
+
+可以看到 AI 能借助 next-devtools 很好的完成工作 👍
+
+下面就是一些小细节，当我们在开发过程中遇到报错，可以看到有一个复制错误的按钮，我们可以很方便的将其复制给 AI Agent 然后帮我分析解决 bug
+
+![image.png](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/typora/20251024001944.png)
+
+
+## 开发者体验
+
+开发过 Next.js 都知道因为服务端组件和客户端组件水和的原因导致 导航速度慢是非常严重并且不被理解的问题，但是我发现，在 next.js 16 好像得到了解决或者说是缓解。除了导航慢，Next.js 的报错没人能看得懂也是非常严重的问题，但是现在有了更友好的提示和 AI 的加持，让我们可以轻松的修复 bug，下面就是我在开发中遇到一个无法看得懂的 bug，AI 借助 MCP 快速进行了修复：
+![image.png](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/typora/20251024005134.png)
+##  复杂的缓存
+
+如果让我说 Next.js 中最难的应该是客户端组件和服务器组件及其它带来的各种渲染模式（SSG、SSR、ISR、PPR、RSC），那最复杂的应该就属缓存了！虽然缓存是编程的一大难点，但是 Next.js 真的是让我更加深刻知道了缓存是多么的复杂。对于缓存这部分，我觉得可以先不学，而是干中学，有一个基本概念就好。因为这部分内容，next.js更新快，并且都是破坏性更新，所以记住了，等版本更新后，又得重新学， 16 版本缓存有：
+- Request Memoization（请求记忆）：同一次服务端渲染树内，相同 `fetch(url, opts)` 只会真正执行一次，后续命中内存结果（仅本次请求生命周期内有效）
+- Data Cache（数据缓存）：服务端的缓存，用于缓存 `fetch` 请求的结果。
+- Full Route Cache（整路由缓存）：静态渲染得到的 **HTML + RSC payload** 会被缓存
+- Client-side Router Cache（客户端路由缓存）：浏览器内存里的 RSC 片段缓存，结合 `<Link>` 预取，可以实现瞬时的回退/前进与保留共享布局状态。可通过 `router.refresh()` 失效。
+
+具体看： https://nextjs.org/docs/app/guides/caching#overview 。next.js 除了缓存的概念多，而且实际开发中也不好调试，并且上线后更难追踪是不是缓存的问题
+
+## 总结
+
+Next.js 16 的到来，总体来说对 Next.js 开发者来说是好事，并且让我看到了未来在技术选择中，是否对 AI 友好将会成为关键点。并且让我看到了技术没有银弹，选择合适的技术栈，让手里的技术更快开发出产品，创造出价值才是正解。
+
+如果你问我用不用 Next.js ，我觉得如果有 SEO 要求，那么可以使用，否则还是 TanStack Start 更好！
+
+## 参考 
+
+1. nextjs 16 blog： https://nextjs.org/blog/next-16
+2. nextjs conf 2025： https://www.youtube.com/watch?v=IdIgkiDu-94&t=10s
+
+
+---
+此文自动发布于：<a href="https://github.com/coderPerseus/blog/issues/82" target="_blank">github issues</a>

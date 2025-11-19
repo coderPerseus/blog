@@ -1,0 +1,257 @@
+---
+title: css 样式污染几种解决方案
+date: 2024-09-01T15:25:56Z
+slug: post-17
+author: chaseFunny：https://github.com/chaseFunny
+tags: ["bug","Next.js","CSS"]
+---
+
+# 背景
+
+在最近项目开发（Next.js  + antd ）中，开发页面的时候遇到了两个问题
+
+1）样式优先级问题
+
+我本地开发好好的，但是部署到线上，我的样式都不见了，打开控制台一看，发现 antd 的样式优先级很高，导致我的样式代码都不生效了，但是在本地我的样式优先级却更高一点，目前解决方案就是不断写 `!important` ，这是最糟糕的解决方案，
+
+2）样式污染问题
+
+在协同开发中，我一不小心就定义了一个可能比较通用的样式类名，例如：.poster-title。然后另一个小伙伴也使用了这个类名，而且我们都没有更高的一个父类名，那么就会出现样式污染
+
+那我就想能不能通过配置或者其他方式解决这个问题，下面就开始探索一下如何解决样式污染和样式优先级问题
+
+# 样式污染解决方案
+
+由于 CSS 默认是没有模块的概念，那解决方案就是让 CSS 也支持模块化，下面是一些可行的解决方案
+
+## CSS Modules
+
+CSS Modules 是一种将 CSS 类名局部化的技术，可以有效防止样式污染。
+
+### 实现
+
+在 React 项目中，默认是支持 css modules 的，我们只需要把文件名改为`module.css` 即可，示例代码：
+
+```js
+// Button.module.css
+.button {
+  background-color: blue;
+  color: white;
+}
+
+// Button.tsx
+import styles from './Button.module.css';
+
+const Button = () => {
+  return <button className={styles.button}>Click me</button>;
+};
+```
+
+![image-20240901195022950](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/work/image-20240901195022950.png)
+
+如果我们在 VSCode 使用 css modules，推荐下载插件：`CSS Modules`
+
+### 优缺点
+
+优点：
+
+- 局部作用域，有效防止样式冲突
+- 可以继续使用熟悉的 CSS 语法
+- 支持组合和继承
+- 编译时静态分析，有利于性能优化
+
+缺点：
+
+- 需要额外的构建配置（React 自带）
+- 类名会被转换，可能影响调试
+
+## Styled Components
+
+ 我们使用 CSS-in-JS 库 Styled Components（一个流行的CSS-in-JS库，除了它还有 Emotion ）实现代码：
+
+```js
+import styled from 'styled-components';
+
+const StyledButton = styled.button`
+  background-color: blue;
+  color: white;
+`;
+
+const Button = () => {
+  return <StyledButton>Click me</StyledButton>;
+};
+```
+
+真正项目开发，我们一般会把定义 StyledButton 的 css 代码单独抽离到一个 ts 文件，提高代码可读性。
+
+注意：对于上面的代码，如果你是在 Next.js 使用，必须保证它在客户端组件，如果你希望服务端组件使用 `styled-components` ，请看：https://styled-components.com/docs/advanced#server-side-rendering
+
+优点：
+
+- 组件级别的样式隔离
+- 支持动态样式和主题
+- 自动生成唯一的类名
+- 支持服务端渲染
+
+缺点：
+
+- 可能增加 bundle 大小
+- 运行时性能开销（组件必须将 JS 中编写的样式转换为 CSS，并在渲染时插入到文档中）
+- 兼容性（比如将应用程序的部分内容移至 [[React 服务器组件](https://nextjs.org/docs/app/building-your-application/rendering/server-components)](https://nextjs.org/docs/app/building-your-application/rendering/server-components)。）
+
+### Tailwind CSS
+
+虽然 tailwindcss 很大，但是在生产环境 Tailwindcss 会使用编译器生成仅使用的类，所以不用担心体积太大的问题，很多人觉得 Tailwindcss 会影响代码可读性，其实是可以通过插件解决的，Tailwindcss 确实是提高了前端开发的幸福度的（个人认为）
+
+使用：使用也很简单，根据官方文档安装，然后参考文档写对应的样式即可，例如在 React 中：
+
+一个居中的 classname： `className='flex justify-center items-center'`
+
+## Inline Styles(行内样式)
+
+示例：`style={{ color: 'red' }}` 
+
+优点：
+
+- 简单直接，无需额外工具
+- 完全隔离，不会影响其他元素
+- 易于动态修改
+
+缺点：
+
+- 不支持伪类和媒体查询
+- 可能导致代码冗余
+- 难以复用样式，后面不好维护
+- 性能较差（特别是在频繁重渲染的情况下）
+
+## styled-jsx
+
+地址：https://www.npmjs.com/package/styled-jsx
+
+Styled JSX 是一个 CSS-in-JS 库，特别适用于 Next.js 项目。它会自动为样式添加作用域，防止污染，
+
+```tsx
+const Button = () => {
+  return (
+    <>
+      <button>Click me</button>
+      <style jsx>{`
+        button {
+          background-color: blue;
+          color: white;
+        }
+      `}</style>
+    </>
+  );
+};
+```
+
+
+
+优点：
+
+- 组件级别的样式隔离
+- 支持完整的 CSS 功能
+- 特别适合 Next.js 项目，在服务器或客户端上呈现
+
+缺点：
+
+- 主要用于 Next.js，在其他 React 项目中使用可能不太方便
+- 可能增加 bundle 大小
+
+
+
+## 命名约定（如BEM）
+
+> BEM 规范文档：https://bemcss.com/
+
+实现（遵循规范）：
+
+```css
+.blockName__elementName-modifierName {
+  background-color: blue;
+  color: white;
+}
+```
+
+优点：
+
+- 无需额外工具或库
+- 易于理解和实施
+- 有利于样式的可读性和维护性
+
+缺点：
+
+- 依赖开发者自觉遵守规则，规范毕竟要靠人为来约束，不能保证绝对不会冲突。
+- 类名可能变得冗长
+- 不能完全防止样式冲突
+- 不支持动态样式
+
+# 样式优先级问题
+
+参考文档：https://ant-design.antgroup.com/docs/react/compatible-style-cn
+
+```tsx
+'use client';
+
+import type Entity from '@ant-design/cssinjs/es/Cache';
+import {
+	createCache,
+	extractStyle,
+	StyleProvider
+} from '@ant-design/cssinjs/es/index';
+import { useServerInsertedHTML } from 'next/navigation';
+import React from 'react';
+
+const StyledComponentsRegistry = ({ children }: React.PropsWithChildren) => {
+	const cache = React.useMemo<Entity>(() => createCache(), []);
+	useServerInsertedHTML(() => (
+		<style
+			id="antd"
+			dangerouslySetInnerHTML={{ __html: extractStyle(cache, true) }}
+		/>
+	));
+	// hashPriority="low"
+	return (
+		<StyleProvider layer cache={cache}>
+			{children}
+		</StyleProvider>
+	);
+};
+
+export default StyledComponentsRegistry;
+```
+
+我们创建一个这样的组件，然后在根 `layout.tsx` 使用。如果你的项目使用了 Tailwindcss ，需要修改 `global.css` 
+
+```csss
+@layer tailwind-base, antd;
+
+@layer tailwind-base {
+	@tailwind base;
+}
+@tailwind components;
+@tailwind utilities;
+@layer reset, antd;
+
+@import url(antd/dist/reset.css) layer(reset);
+/* 更多自定义 css */
+```
+
+对于如何在 Next.js 14 中使用 antd，我写了一个示例，代码仓库地址：https://github.com/axin-s-Template/Nextjs-Boilerplate/tree/with-antd
+
+## 总结
+
+1）我们了解了总共 6 种 样式书写方案，每个都有自己的优缺点，
+
+2）我们通过 antd 官方文档解决了 antd 样式优先级过高的问题
+
+## 参考资料
+
+1. https://airbnb.io/projects/react-with-styles/
+2. https://medium.com/@KimeraMoses/styling-options-for-react-js-and-next-js-7f4507b57781
+3. https://juejin.cn/post/7263871284010303546
+4. https://juejin.cn/post/7320655424641990682?searchId=202408251659050C6C3214264B83F33D4D
+
+---
+此文自动发布于：<a href="https://github.com/coderPerseus/blog/issues/17" target="_blank">github issues</a>

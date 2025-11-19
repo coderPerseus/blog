@@ -1,0 +1,674 @@
+---
+title: React V19 官方 blog（翻译）
+date: 2025-01-11T08:42:12Z
+slug: post-41
+author: chaseFunny：https://github.com/chaseFunny
+tags: ["翻译","React"]
+---
+
+# React 19 来啦！
+
+2024 年 12 月 5 日，[React 团队](https://react.dev/community/team)发布
+
+___
+
+> 说明
+>  React 19 现已稳定！  
+> 
+> 自 4 月发布 React 19 RC 版本以来，新增内容如下：  
+> - **挂起树的预热**：请参阅 [Suspense 的改进](https://react.dev/blog/2024/04/25/react-19-upgrade-guide#improvements-to-suspense)。  
+> - **React DOM 静态 API**：请参阅 [新的 React DOM 静态 API](https://react.dev/blog/2024/12/05/react-19#new-react-dom-static-apis)。  
+> 
+> *本文日期已更新以反映稳定版发布日期。*
+
+React v19 现已发布到 npm！
+
+在我们的 [React 19 升级指南](https://react.dev/blog/2024/04/25/react-19-upgrade-guide) 中，我们分享了将您的应用程序升级到 React 19 的逐步说明。在这篇文章中，我们将概述 React 19 中的新功能，以及如何采用这些功能。
+
+-   [React 19 的新功能](https://react.dev/blog/2024/12/05/react-19#whats-new-in-react-19)
+-   [React 19 的改进](https://react.dev/blog/2024/12/05/react-19#improvements-in-react-19)
+-   [如何升级](https://react.dev/blog/2024/12/05/react-19#how-to-upgrade)
+
+有关破坏性更改的列表，请参阅 [升级指南](https://react.dev/blog/2024/04/25/react-19-upgrade-guide)。
+
+---
+
+## React 19 的新功能
+
+### Actions
+
+在 React 应用程序中，一个常见的用例是执行数据变更，然后更新状态以响应变更。例如，当用户提交表单以更改其名称时，您将发出 API 请求，然后处理响应。在过去，您需要手动处理挂起状态、错误、乐观更新和顺序请求。
+
+例如，您可以使用 `useState` 来处理挂起和错误状态：
+
+```tsx
+// Before Actions
+function UpdateName({}) {
+	const [name, setName] = useState("");
+	const [error, setError] = useState(null);
+	const [isPending, setIsPending] = useState(false);
+
+	const handleSubmit = async () => {
+		setIsPending(true);
+		const error = await updateName(name);
+		setIsPending(false);
+		if (error) {
+			setError(error);
+			return;
+		}
+		redirect("/path");
+	};
+
+	return (
+		<div>
+			<input value={name} onChange={(event) => setName(event.target.value)} />
+			<button onClick={handleSubmit} disabled={isPending}>
+				Update
+			</button>
+			{error && <p>{error}</p>}
+		</div>
+	);
+}
+```
+
+在 React 19 中，我们新增了对在过渡（transitions）中使用异步函数的支持，以自动处理挂起状态、错误、表单和乐观更新。
+
+例如，您可以使用 `useTransition` 来为您处理挂起状态：
+
+```tsx
+// Using pending state from Actions
+function UpdateName({}) {
+  const [name, setName] = useState("");
+  const [error, setError] = useState(null);
+  const [isPending, startTransition] = useTransition();
+
+  const handleSubmit = () => {
+    startTransition(async () => {
+      const error = await updateName(name);
+      if (error) {
+        setError(error);
+        return;
+      } 
+      redirect("/path");
+    })
+  };
+
+  return (
+    <div>
+      <input value={name} onChange={(event) => setName(event.target.value)} />
+      <button onClick={handleSubmit} disabled={isPending}>
+        Update
+      </button>
+      {error && <p>{error}</p>}
+    </div>
+  );
+}
+```
+
+异步过渡会立即将 `isPending` 状态设置为 `true`，发出异步请求，并在任何过渡完成后将 `isPending` 切换为 `false`。这使得您可以在数据变更期间保持当前 UI 的响应性和交互性。
+
+> 说明
+> 按照惯例，使用异步过渡的函数被称为“Actions”。
+> 
+> Actions 会自动为您管理数据提交：
+> 
+> - **挂起状态**：Actions 提供了一个挂起状态，该状态在请求开始时启动，并在最终状态更新提交后自动重置。
+> - **乐观更新**：Actions 支持新的 [`useOptimistic`](https://react.dev/blog/2024/12/05/react-19#new-hook-optimistic-updates) 钩子，因此您可以在请求提交时向用户显示即时反馈。
+> - **错误处理**：Actions 提供了错误处理功能，因此您可以在请求失败时显示错误边界，并自动将乐观更新恢复为其原始值。
+> - **表单**：`<form>` 元素现在支持将函数传递给 `action` 和 `formAction` 属性。将函数传递给 `action` 属性会默认使用 Actions，并在提交后自动重置表单。
+
+基于 Actions，React 19 引入了 [`useOptimistic`](https://react.dev/blog/2024/12/05/react-19#new-hook-optimistic-updates) 来管理乐观更新，以及一个新的钩子 [`React.useActionState`](https://react.dev/blog/2024/12/05/react-19#new-hook-useactionstate) 来处理 Actions 的常见用例。在 `react-dom` 中，我们添加了 [`<form>` Actions](https://react.dev/blog/2024/12/05/react-19#form-actions) 来自动管理表单，以及 [`useFormStatus`](https://react.dev/blog/2024/12/05/react-19#new-hook-useformstatus) 来支持表单中 Actions 的常见用例。
+
+在 React 19 中，上述示例可以简化为：
+
+```tsx
+// Using <form> Actions and useActionState
+function ChangeName({ name, setName }) {
+  const [error, submitAction, isPending] = useActionState(
+    async (previousState, formData) => {
+      const error = await updateName(formData.get("name"));
+      if (error) {
+        return error;
+      }
+      redirect("/path");
+      return null;
+    },
+    null,
+  );
+
+  return (
+    <form action={submitAction}>
+      <input type="text" name="name" />
+      <button type="submit" disabled={isPending}>Update</button>
+      {error && <p>{error}</p>}
+    </form>
+  );
+}
+```
+在下一节中，我们将详细介绍 React 19 中的每个新 Action 功能。
+
+### 新钩子：useActionState
+
+为了让 Actions 的常见用例更简单，我们添加了一个名为 `useActionState` 的新钩子：
+
+```tsx
+const [error, submitAction, isPending] = useActionState(
+  async (previousState, newName) => {
+    const error = await updateName(newName);
+    if (error) {
+      // 您可以返回操作的任何结果。
+      // 这里，我们仅返回错误。
+      return error;
+    }
+    // 成功处理
+    return null;
+  },
+  null,
+);
+```
+
+`useActionState` 接受一个函数（即“Action”），并返回一个包装后的 Action 以供调用。这是可行的，因为 Actions 是可组合的。当调用包装后的 Action 时，`useActionState` 会将 Action 的最后一个结果作为 `data` 返回，并将 Action 的挂起状态作为 `pending` 返回。
+
+> 注意
+> 在 Canary 版本中，`React.useActionState` 之前被称为 `ReactDOM.useFormState`，但我们已将其重命名并弃用了 `useFormState`。
+> 有关更多信息，请参阅 [#28491](https://github.com/facebook/react/pull/28491)。
+
+更多详细信息，请参阅 [`useActionState`](https://react.dev/reference/react/useActionState) 的文档。
+
+### React DOM：`<form>` Actions
+
+Actions 还与 React 19 的新 `<form>` 功能集成，适用于 `react-dom`。我们新增了对将函数作为 `<form>`、`<input>` 和 `<button>` 元素的 `action` 和 `formAction` 属性的支持，以使用 Actions 自动提交表单：
+
+```tsx
+<form action={actionFunction}>
+```
+
+当 `<form>` 的 Action 成功时，React 会自动为非受控组件重置表单。如果您需要手动重置 `<form>`，可以调用新的 `requestFormReset` React DOM API。
+
+有关更多信息，请参阅 `react-dom` 文档中的 [`<form>`](https://react.dev/reference/react-dom/components/form)、[`<input>`](https://react.dev/reference/react-dom/components/input) 和 `<button>`。
+
+### React DOM：新钩子：useFormStatus
+
+在设计系统中，通常需要编写需要访问其所在 `<form>` 信息的设计组件，而无需将属性逐层传递到组件中。这可以通过 Context 实现，但为了使常见用例更简单，我们添加了一个新钩子 `useFormStatus`：
+
+```tsx
+import {useFormStatus} from 'react-dom';
+
+function DesignButton() {
+  const {pending} = useFormStatus();
+  return <button type="submit" disabled={pending} />
+}
+```
+
+`useFormStatus` 会读取父级 `<form>` 的状态，就像表单是一个 Context 提供者一样。
+
+有关更多信息，请参阅 `react-dom` 文档中的 [`useFormStatus`](https://react.dev/reference/react-dom/hooks/useFormStatus)。
+
+### 新钩子：useOptimistic
+
+在执行数据变更时，另一个常见的 UI 模式是在异步请求进行时乐观地显示最终状态。在 React 19 中，我们添加了一个名为 `useOptimistic` 的新钩子，以使这一过程更加简单：
+
+```tsx
+function ChangeName({currentName, onUpdateName}) {
+  const [optimisticName, setOptimisticName] = useOptimistic(currentName);
+
+  const submitAction = async formData => {
+    const newName = formData.get("name");
+    setOptimisticName(newName);
+    const updatedName = await updateName(newName);
+    onUpdateName(updatedName);
+  };
+
+  return (
+    <form action={submitAction}>
+      <p>Your name is: {optimisticName}</p>
+      <p>
+        <label>Change Name:</label>
+        <input
+          type="text"
+          name="name"
+          disabled={currentName !== optimisticName}
+        />
+      </p>
+    </form>
+  );
+}
+```
+
+`useOptimistic` 钩子会在 `updateName` 请求进行时立即渲染 `optimisticName`。当更新完成或出错时，React 会自动切换回 `currentName` 值。
+
+有关更多信息，请参阅 [`useOptimistic`](https://react.dev/reference/react/useOptimistic) 的文档。
+
+### 新 API：use
+
+在 React 19 中，我们引入了一个新的 API 来在渲染时读取资源：`use`。
+
+例如，您可以使用 `use` 读取一个 promise，React 将会暂停（Suspend）直到该 promise 解决：
+
+```tsx
+import {use} from 'react';
+
+function Comments({commentsPromise}) {
+  // `use` will suspend until the promise resolves.
+  const comments = use(commentsPromise);
+  return comments.map(comment => <p key={comment.id}>{comment}</p>);
+}
+
+function Page({commentsPromise}) {
+  // When `use` suspends in Comments,
+  // this Suspense boundary will be shown.
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <Comments commentsPromise={commentsPromise} />
+    </Suspense>
+  )
+}
+```
+
+> 注意
+> 
+> `use` 不支持在渲染中创建的 promise。
+> 
+> 如果您尝试将渲染中创建的 promise 传递给 `use`，React 会发出警告：`A component was suspended by an uncached promise. Creating promises inside a Client Component or hook is not yet supported, except via a Suspense-compatible library or framework.`
+> 翻译报错：一个组件被未缓存的 promise 暂停了。目前不支持在客户端组件或钩子中创建 promise，除非通过兼容 Suspense 的库或框架。
+> 
+> 要解决此问题，您需要从支持缓存 promise 的 Suspense 驱动的库或框架中传递 promise。未来我们计划推出功能，以便更轻松地在渲染中缓存 promise。
+
+您还可以使用 `use` 读取上下文，从而允许您在条件语句（如提前返回后）中读取上下文：
+
+```tsx
+import {use} from 'react';
+import ThemeContext from './ThemeContext'
+
+function Heading({children}) {
+  if (children == null) {
+    return null;
+  }
+  
+  // This would not work with useContext
+  // because of the early return.
+  const theme = use(ThemeContext);
+  return (
+    <h1 style={{color: theme.color}}>
+      {children}
+    </h1>
+  );
+}
+```
+
+`use` API 只能在渲染中调用，类似于钩子。与钩子不同的是，`use` 可以在条件语句中调用。未来我们计划支持更多在渲染中使用 `use` 消费资源的方式。
+
+有关更多信息，请参阅 [`use`](https://react.dev/reference/react/use) 的文档。
+
+## 新的 React DOM 静态 API
+
+我们为静态站点生成向 `react-dom/static` 添加了两个新 API：
+
+-   [`prerender`](https://react.dev/reference/react-dom/static/prerender)
+-   [`prerenderToNodeStream`](https://react.dev/reference/react-dom/static/prerenderToNodeStream)
+
+这些新 API 通过等待数据加载以生成静态 HTML，改进了 `renderToString`。它们旨在与 Node.js 流和 Web 流等流式环境配合使用。例如，在 Web 流环境中，您可以使用 `prerender` 将 React 树预渲染为静态 HTML：
+
+```tsx
+import { prerender } from 'react-dom/static';
+
+async function handler(request) {
+  const {prelude} = await prerender(<App />, {
+    bootstrapScripts: ['/main.js']
+  });
+  return new Response(prelude, {
+    headers: { 'content-type': 'text/html' },
+  });
+}
+```
+
+预渲染 API 将等待所有数据加载完毕后再返回静态 HTML 流。流可以转换为字符串，或通过流式响应发送。它们不支持在加载时流式传输内容，这是现有的 [React DOM 服务器渲染 API](https://react.dev/reference/react-dom/server) 所支持的。
+
+有关更多信息，请参阅 [React DOM 静态 API](https://react.dev/reference/react-dom/static)。
+
+## React 服务器组件
+
+### 服务器组件
+
+服务器组件是一种新选项，允许在与客户端应用程序或 SSR 服务器分离的环境中提前渲染组件，然后再进行打包。这个独立的环境就是 React 服务器组件中的“服务器”。服务器组件可以在 CI 服务器上构建时运行一次，也可以使用 Web 服务器为每个请求运行。
+
+React 19 包含了从 Canary 渠道引入的所有 React 服务器组件功能。这意味着支持服务器组件的库现在可以将 React 19 作为对等依赖项，并使用 `react-server` [导出条件](https://github.com/reactjs/rfcs/blob/main/text/0227-server-module-conventions.md#react-server-conditional-exports) 以在支持 [全栈 React 架构](https://react.dev/learn/start-a-new-react-project#which-features-make-up-the-react-teams-full-stack-architecture-vision) 的框架中使用。
+
+> 注意
+> 
+> 如何构建对服务器组件的支持？
+> 虽然 React 19 中的 React 服务器组件是稳定的，并且在次要版本之间不会破坏，但用于实现 React 服务器组件打包器或框架的底层 API 不遵循语义版本控制，可能会在 React 19.x 的次要版本之间破坏。
+> 
+> 作为打包器或框架支持 React 服务器组件时，我们建议固定到特定的 React 版本，或使用 Canary 版本。我们将继续与打包器和框架合作，以稳定未来用于实现 React 服务器组件的 API。
+
+更多信息，请参阅 [React 服务器组件](https://react.dev/reference/rsc/server-components) 的文档。
+
+### 服务器操作
+
+服务器操作允许客户端组件调用在服务器上执行的异步函数。
+
+当使用 `"use server"` 指令定义服务器操作时，您的框架会自动创建对服务器函数的引用，并将该引用传递给客户端组件。当在客户端调用该函数时，React 会向服务器发送请求以执行该函数，并返回结果。
+
+> 注意
+> 
+> 服务器组件没有指令。
+> 一个常见的误解是服务器组件由 `"use server"` 表示，但服务器组件没有指令。`"use server"` 指令用于服务器操作。
+> 
+> 更多信息，请参阅 [指令](https://react.dev/reference/rsc/directives) 的文档。
+
+服务器操作可以在服务器组件中创建并作为属性传递给客户端组件，也可以在客户端组件中导入并使用。
+
+更多信息，请参阅 [React 服务器操作](https://react.dev/reference/rsc/server-actions) 的文档。
+
+## React 19 的改进
+
+### ref 作为属性
+
+从 React 19 开始，您现在可以将 `ref` 作为函数组件的属性访问：
+
+```tsx
+function MyInput({placeholder, ref}) {
+  return <input placeholder={placeholder} ref={ref} />
+}
+
+//...
+<MyInput ref={ref} />
+```
+
+新的函数组件将不再需要 `forwardRef`，我们将发布一个代码修改工具，自动更新您的组件以使用新的 `ref` 属性。在未来的版本中，我们将弃用并移除 `forwardRef`。
+
+> 注意
+> 
+> 传递给类组件的 `refs` 不会作为属性传递，因为它们引用的是组件实例。
+
+### 水合( hydration )错误的差异
+
+我们还改进了 `react-dom` 中水合错误的错误报告。例如，不再是在开发环境中记录多个错误而没有关于不匹配的任何信息：
+
+![server error1](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/work/image-20250110160038370.png)
+
+我们现在会记录一条包含不匹配差异的单一消息：
+
+![server error2](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/work/image-20250110160125224.png)
+
+### `<Context>` 作为提供者
+
+在 React 19 中，您可以将 `<Context>` 渲染为提供者，而不是 `<Context.Provider>`。
+
+```tsx
+const ThemeContext = createContext('');
+
+function App({children}) {
+  return (
+    <ThemeContext value="dark">
+      {children}
+    </ThemeContext>
+  );  
+） ；
+}
+```
+
+新的 Context 提供者可以使用 `<Context>`，我们将发布一个代码修改工具来转换现有的提供者。在未来的版本中，我们将弃用 `<Context.Provider>`。
+
+### ref 的清理函数
+
+我们现在支持从 `ref` 回调中返回清理函数：
+
+```jsx
+<input
+  ref={(ref) => {
+    // ref created
+
+    // NEW: return a cleanup function to reset
+    // the ref when element is removed from DOM.
+    return () => {
+      // ref cleanup
+    };
+  }}
+/>
+```
+当组件卸载时，React 将调用从 `ref` 回调返回的清理函数。这适用于 DOM ref、类组件的 ref 以及 `useImperativeHandle`。
+
+> 注意
+> 
+> 以前，当卸载组件时，React 会使用 `null` 调用 `ref` 函数。如果您的 `ref` 返回一个清理函数，React 现在将跳过此步骤。
+> 
+> 在未来的版本中，我们将在卸载组件时弃用使用 `null` 调用 ref。
+
+由于引入了 ref 清理函数，现在从 `ref` 回调返回任何其他内容都将被 TypeScript 拒绝。修复方法通常是停止使用隐式返回，例如：
+
+```tsx
+- <div ref={current => (instance = current)} />
++ <div ref={current => {instance = current}} />
+```
+
+原始代码返回了 `HTMLDivElement` 的实例，而 TypeScript 无法判断这是否是**有意**返回的清理函数，或者您是否不希望返回清理函数。
+
+您可以使用 [`no-implicit-ref-callback-return`](https://github.com/eps1lon/types-react-codemod/#no-implicit-ref-callback-return) 代码修改工具来修复此模式。
+
+### useDeferredValue 初始值
+
+我们为 `useDeferredValue` 添加了一个 `initialValue` 选项：
+
+```tsx
+function Search({deferredValue}) {
+  // On initial render the value is ''.
+  // Then a re-render is scheduled with the deferredValue.
+  const value = useDeferredValue(deferredValue, '');
+  
+  return (
+    <Results query={value} />
+  );
+}
+```
+
+当提供了 `initialValue` 时，`useDeferredValue` 将在组件的初始渲染中将其作为 `value` 返回，并在后台安排一次重新渲染，返回 `deferredValue`。
+
+更多信息，请参阅 [`useDeferredValue`](https://react.dev/reference/react/useDeferredValue)。
+
+### 对文档元数据的支持
+
+在 HTML 中，诸如 `<title>`、`<link>` 和 `<meta>` 等文档元数据标签被保留用于放置在文档的 `<head>` 部分。在 React 中，决定应用程序使用哪些元数据的组件可能离渲染 `<head>` 的地方非常远，或者 React 根本不渲染 `<head>`。过去，这些元素需要在 effect 中手动插入，或者通过像 [`react-helmet`](https://github.com/nfl/react-helmet) 这样的库来插入，并且在服务器渲染 React 应用程序时需要小心处理。
+
+在 React 19 中，我们增加了对在组件中原生渲染文档元数据标签的支持：
+
+```tsx
+function BlogPost({post}) {
+  return (
+    <article>
+      <h1>{post.title}</h1>
+      <title>{post.title}</title>
+      <meta name="author" content="Josh" />
+      <link rel="author" href="https://twitter.com/joshcstory/" />
+      <meta name="keywords" content={post.keywords} />
+      <p>
+        Eee equals em-see-squared...
+      </p>
+    </article>
+  );
+}
+```
+
+当 React 渲染此组件时，它会识别 `<title>`、`<link>` 和 `<meta>` 标签，并自动将它们提升到文档的 `<head>` 部分。通过原生支持这些元数据标签，我们能够确保它们适用于仅客户端的应用程序、流式 SSR 和服务器组件。
+
+> 注意
+> 
+> 您可能仍然需要一个元数据库
+> 
+> 对于简单的用例，将文档元数据渲染为标签可能是合适的，但库可以提供更强大的功能，例如根据当前路由用特定元数据覆盖通用元数据。这些功能使框架和库（如 [`react-helmet`](https://github.com/nfl/react-helmet)）更容易支持元数据标签，而不是替换它们。
+
+更多信息，请参阅 [`<title>`](https://react.dev/reference/react-dom/components/title)、[`<link>`](https://react.dev/reference/react-dom/components/link) 和 [`<meta>`](https://react.dev/reference/react-dom/components/meta) 的文档。
+
+### 对样式表的支持
+
+由于样式优先级规则，外部链接的样式表（`<link rel="stylesheet" href="...">`）和内联样式表（`<style>...</style>`）需要在 DOM 中小心定位。构建一个允许在组件内组合的样式表功能是很困难的，因此用户通常最终会加载所有样式，远离可能依赖它们的组件，或者使用封装了这种复杂性的样式库。
+
+在 React 19 中，我们正在解决这种复杂性，并通过内置的样式表支持，提供更深入的客户端并发渲染和服务器流式渲染集成。如果您告诉 React 样式表的 `precedence`，它将管理样式表在 DOM 中的插入顺序，并确保样式表（如果是外部的）在显示依赖这些样式规则的内容之前加载。
+
+```tsx
+function ComponentOne() {
+  return (
+    <Suspense fallback="loading...">
+      <link rel="stylesheet" href="foo" precedence="default" />
+      <link rel="stylesheet" href="bar" precedence="high" />
+      <article class="foo-class bar-class">
+        {...}
+      </article>
+    </Suspense>
+  )
+}
+
+function ComponentTwo() {
+  return (
+    <div>
+      <p>{...}</p>
+      <link rel="stylesheet" href="baz" precedence="default" />  <-- will be inserted between foo & bar
+    </div>
+  )
+}
+```
+
+在服务器端渲染期间，React 会将样式表包含在 `<head>` 中，这确保浏览器在加载样式表之前不会进行绘制。如果样式表在已经开始流式传输后才被发现，React 将确保在显示依赖该样式表的 Suspense 边界内容之前，将样式表插入客户端的 `<head>` 中。
+
+在客户端渲染期间，React 会等待新渲染的样式表加载完成后再提交渲染。如果您在应用程序中的多个位置渲染此组件，React 只会将样式表包含在文档中一次：
+
+```tsx
+function App() {
+  return <>
+    <ComponentOne />
+    ...
+    <ComponentOne /> // won't lead to a duplicate stylesheet link in the DOM
+  </>
+}
+```
+
+对于习惯于手动加载样式表的用户来说，这是一个将样式表与依赖它们的组件放在一起的机会，从而实现更好的局部推理，并更容易确保仅加载实际依赖的样式表。
+
+样式库和与打包器的样式集成也可以采用这一新功能，因此即使您不直接渲染自己的样式表，当您的工具升级以使用此功能时，您仍然可以受益。
+
+更多详细信息，请阅读 [`<link>`](https://react.dev/reference/react-dom/components/link) 和 [`<style>`](https://react.dev/reference/react-dom/components/style) 的文档。
+
+### 对异步脚本的支持
+
+在 HTML 中，普通脚本（`<script src="...">`）和延迟脚本（`<script defer="" src="...">`）按文档顺序加载，这使得在组件树深处渲染这些脚本具有挑战性。然而，异步脚本（`<script async="" src="...">`）将以任意顺序加载。
+
+在 React 19 中，我们通过允许您在组件树中的任何位置渲染异步脚本（在实际依赖脚本的组件内部），而无需管理脚本实例的重新定位和去重，从而提供了更好的支持。
+
+```tsx
+function MyComponent() {
+  return (
+    <div>
+      <script async={true} src="..." />
+      Hello World
+    </div>
+  )
+}
+
+function App() {
+  <html>
+    <body>
+      <MyComponent>
+      ...
+      <MyComponent> // won't lead to duplicate script in the DOM
+    </body>
+  </html>
+}
+```
+
+在所有渲染环境中，异步脚本将被去重，因此即使多个不同的组件渲染了相同的脚本，React 也只会加载并执行一次。
+
+在服务器端渲染中，异步脚本将被包含在 `<head>` 中，并优先于阻塞绘制的更关键资源（如样式表、字体和图像预加载）之后加载。
+
+更多详细信息，请阅读 [`<script>`](https://react.dev/reference/react-dom/components/script) 的文档。
+
+### 对预加载资源的支持
+
+在初始文档加载和客户端更新期间，尽早告知浏览器可能需要加载的资源可以显著提高页面性能。
+
+React 19 包含了许多用于加载和预加载浏览器资源的新 API，使构建不受低效资源加载影响的出色体验变得尽可能简单。
+
+```tsx
+import { prefetchDNS, preconnect, preload, preinit } from 'react-dom'
+function MyComponent() {
+  preinit('https://.../path/to/some/script.js', {as: 'script' }) // loads and executes this script eagerly
+  preload('https://.../path/to/font.woff', { as: 'font' }) // preloads this font
+  preload('https://.../path/to/stylesheet.css', { as: 'style' }) // preloads this stylesheet
+  prefetchDNS('https://...') // when you may not actually request anything from this host
+  preconnect('https://...') // when you will request something but aren't sure what
+}
+```
+
+```html
+<!-- the above would result in the following DOM/HTML -->
+<html>
+  <head>
+    <!-- links/scripts are prioritized by their utility to early loading, not call order -->
+    <link rel="prefetch-dns" href="https://...">
+    <link rel="preconnect" href="https://...">
+    <link rel="preload" as="font" href="https://.../path/to/font.woff">
+    <link rel="preload" as="style" href="https://.../path/to/stylesheet.css">
+    <script async="" src="https://.../path/to/some/script.js"></script>
+  </head>
+  <body>
+    ...
+  </body>
+</html>
+```
+
+这些 API 可用于优化初始页面加载，通过将字体等额外资源的发现移出样式表加载过程。它们还可以通过预取预期导航使用的资源列表，然后在点击或悬停时急切地预加载这些资源，从而使客户端更新更快。
+
+更多详细信息，请参阅 [资源预加载 API](https://react.dev/reference/react-dom#resource-preloading-apis)。
+
+### 与第三方脚本和扩展的兼容性
+
+我们改进了水合过程，以考虑第三方脚本和浏览器扩展。
+
+在水合过程中，如果客户端渲染的元素与服务器 HTML 中的元素不匹配，React 将强制客户端重新渲染以修复内容。以前，如果元素是由第三方脚本或浏览器扩展插入的，则会触发不匹配错误并导致客户端渲染。
+
+在 React 19 中，`<head>` 和 `<body>` 中的意外标签将被跳过，从而避免不匹配错误。如果 React 由于不相关的水合不匹配而需要重新渲染整个文档，它将保留由第三方脚本和浏览器扩展插入的样式表。
+
+### 更好的错误报告
+
+我们在 React 19 中改进了错误处理，以减少重复并提供处理捕获和未捕获错误的选项。例如，当渲染过程中出现被错误边界捕获的错误时，以前 React 会抛出错误两次（一次是原始错误，另一次是在自动恢复失败后），然后调用 `console.error` 并提供有关错误发生位置的信息。
+
+这导致每个捕获的错误都会产生三个错误：
+
+![error3](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/work/image-20250110161641420.png)
+
+在 React 19 中，我们记录一个包含所有错误信息的单一错误：
+
+![error2](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/work/image-20250110161721263.png)
+
+此外，我们还添加了两个新的根选项来补充 `onRecoverableError`：
+
+-   `onCaughtError`：当 React 在错误边界中捕获错误时调用。
+-   `onUncaughtError`：当抛出错误且未被错误边界捕获时调用。
+-   `onRecoverableError`：当抛出错误并自动恢复时调用。
+
+更多信息和示例，请参阅 [`createRoot`](https://react.dev/reference/react-dom/client/createRoot) 和 [`hydrateRoot`](https://react.dev/reference/react-dom/client/hydrateRoot) 的文档。
+
+### 对自定义元素的支持
+
+React 19 添加了对自定义元素的全面支持，并通过了 [Custom Elements Everywhere](https://custom-elements-everywhere.com/) 的所有测试。
+
+在过去的版本中，在 React 中使用自定义元素一直很困难，因为 React 将无法识别的属性视为属性（attributes）而不是属性（properties）。在 React 19 中，我们添加了对属性的支持，该支持在客户端和 SSR 期间有效，具体策略如下：
+
+-   **服务器端渲染**：传递给自定义元素的属性如果其类型是原始值（如 `string`、`number` 或值为 `true`），则将渲染为属性（attributes）。具有非原始类型（如 `object`、`symbol`、`function` 或值为 `false`）的属性将被省略。
+-   **客户端渲染**：与自定义元素实例上的属性（properties）匹配的属性将作为属性（properties）分配，否则将作为属性（attributes）分配。
+
+感谢 [Joey Arhar](https://github.com/josepharhar) 推动了 React 中自定义元素支持的设计和实现。
+
+#### 如何升级
+
+请参阅 [React 19 升级指南](https://react.dev/blog/2024/04/25/react-19-upgrade-guide)，了解逐步说明以及破坏性更改和重要更改的完整列表。
+
+_注意：本文最初发布于 2024 年 4 月 25 日，并于 2024 年 12 月 5 日更新为稳定版。_
+
+---
+
+原文：https://react.dev/blog/2024/12/05/react-19#new-hook-useformstatus
+
+以上翻译由 [deepseek](https://www.deepseek.com/) + 人工校验
+
+---
+此文自动发布于：<a href="https://github.com/coderPerseus/blog/issues/41" target="_blank">github issues</a>
