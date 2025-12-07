@@ -1,0 +1,471 @@
+---
+title: 📒《Smalltalk Best Practice Patterns》阅读笔记
+date: 2025-12-07T16:33:08Z
+slug: post-90
+author: coderPerseus：https://github.com/coderPerseus
+tags: ["读书笔记"]
+---
+
+大家好，我是 luckySnail，分享一本面向对象编程的好书 《Smalltalk Best Practice Patterns》，这本书是基于 **Smalltalk** 编程语言提炼出的面向对象设计与编码模式，但是其他语言也适用。
+这本书的作者是 Kent Beck ，是美国著名的软件工程师、作家，是软件开发领域的重要先驱者之一，作者出生于美国硅谷，父亲是电器工程师，受家庭环境影响，他也走上了计算机的道路，并成功获得计算机硕士学位。他还是**敏捷开发之父之一**、**TDD（测试驱动开发）发明者**、**极限编程（XP）创始人**，也曾是 Facebook（Meta）的工程教练。他还提出非常有影响力的理念：Code is a liability. 认为代码是负债
+下面我会先总结书中的编程精华，然后再分享书中的一些摘抄
+> 原书是使用 Smalltalk 语言，这里转为 JavaScript 语言版本
+## 编程 Tips
+
+### 1. 核心思维：代码是写给队友（和未来的自己）看的
+
+- 一次且仅一次 (DRY - Don't Repeat Yourself)：
+    如果你在两个 function 中看到了复制粘贴的代码，请提取它。
+    - _JS 实践：_ 善用模块化（`import/export`）提取公共工具函数，或者提取父类/组合逻辑。
+- 许多小碎片 (Lots of Little Pieces)：
+    不要写几百行的“上帝函数”。把大函数拆分成许多小的、功能单一的函数。
+    - _JS 实践：_ 一个文件不要塞进太多逻辑，利用 ES Modules 拆分文件。
+- 意图优先 (Intention over Implementation)：
+    函数名要通过名字告诉调用者“我要做什么”，而不是“我怎么做” 。
+    - _Bad:_ `processUserArrayLoop()` (描述了实现细节)
+    - _Good:_ `notifyActiveUsers()` (描述了业务意图)
+### 2. 函数设计：让逻辑像文章一样流畅
+- 组合方法 (Composed Method)：
+    一个顶层业务函数应该像一个“目录”。它只负责调用其他的步骤函数，不应该包含具体的 for 循环或复杂的 if 判断细节。
+    - _JS 示例:_
+```javascript
+        // Bad
+        async function checkout(cart) {
+          if (cart.length === 0) return;
+          let total = 0;
+          for (const item of cart) { total += item.price; }
+          await api.charge(total);
+          // ... 几十行代码
+        }
+        
+        // Good (Composed Method)
+        async function checkout(cart) {
+          if (isEmpty(cart)) return; // Guard Clause
+          const total = calculateTotal(cart);
+          await chargeCustomer(total);
+          await emailReceipt(cart);
+        }
+```
+        
+- 完整的创建方法 (Complete Creation Method)：
+    不要创建一个“空对象”然后让用户一行行去填数据。提供一个工厂函数或构造函数，一次性传完必要参数，返回一个立即可用的对象。
+    - _JS 实践：_ 使用 `Factory Functions` 或 Class 的 `constructor`。
+    - _示例:_ `const user = User.createValidUser(name, email);` 而不是 `const u = new User(); u.name = ...;`
+### 3. 逻辑控制：告别回调地狱与嵌套
+- 卫语句 (Guard Clause)：
+    不要把主逻辑包裹在层层嵌套的 if 块里。如果在函数开头发现条件不满足（如参数为空、出错），直接 return 。
+    - _JS 实践：_
+```JavaScript
+        // Bad
+        function process(user) {
+          if (user) {
+            if (user.isActive) {
+              // 做事...
+            }
+          }
+        }
+        
+        // Good
+        function process(user) {
+          if (!user || !user.isActive) return;
+          // 做事...
+        }
+```
+- 消息即选择 (Polymorphism over Switch)：
+    如果你发现自己在写 switch (type) 或大量的 if (type === 'A')，尝试用对象的多态或策略模式代替 。
+    - _JS 实践：_ 使用对象字面量映射 (Object Map) 代替 Switch。
+    - _示例:_
+```JavaScript
+        const handlers = {
+          'A': handleTypeA,
+          'B': handleTypeB
+        };
+        const run = handlers[type] || defaultHandler;
+        run();
+```
+### 4. 变量使用：让数据会说话
+- 解释性临时变量 (Explaining Temporary Variable)：
+    如果 if 条件里有一长串 && 和 ||，把它们赋值给一个布尔值变量，用变量名解释这个条件是什么意思 。
+    - _JS 示例:_
+```JavaScript
+        // Bad
+        if (platform.toUpperCase().indexOf('MAC') > -1 && browser.type === 'Chrome' && version > 80) { ... }
+        
+        // Good
+        const isModernMacChrome = ...;
+        if (isModernMacChrome) { ... }
+```
+- 角色导向命名 (Role Suggesting Name)：
+    变量名要说明它在当前上下文的角色，JS 是动态类型语言，这点尤为重要 。
+    - _Bad:_ `const arr = []` (只是说了类型)
+    - _Good:_ `const activeUsers = []` (说了角色)
+### 5. 数组操作：扔掉 for 循环
+Smalltalk 最引以为傲的就是集合操作，这对应了现代 JavaScript 的 Array Methods。只要能用高阶函数，就别手写循环。
+- **遍历 (Enumeration)**:
+    - Smalltalk: `do:` -> JavaScript: `.forEach()` 或 `for...of` (为了副作用)。
+- **转换 (Transformation)**:
+    - Smalltalk: `collect:` -> JavaScript: `.map()`。
+    - _场景:_ 把用户对象列表变成用户 ID 列表。
+- **筛选 (Filtering)**:
+    - Smalltalk: `select:` / `reject:` -> JavaScript: `.filter()`。
+    - _场景:_ 只要成年的用户。
+- **查找 (Searching)**:
+    - Smalltalk: `detect:` -> JavaScript: `.find()`。
+    - _场景:_ 找到列表中第一个叫 "Admin" 的人。
+- **聚合 (Reduction)**:
+    - Smalltalk: `inject:into:` -> JavaScript: `.reduce()`。
+    - _场景:_ 计算购物车总金额。
+- **判空 (Emptiness)**:
+    - Smalltalk: `isEmpty` -> JavaScript: 封装一个工具函数 `isEmpty(arr)` 或者在领域对象中封装 `.length === 0` 的检查，不要让 `.length === 0` 散落在代码各处，语义不直观。
+
+下面是关于**对象交互、状态管理和代码组织**的高级模式。这些模式在构建复杂的 JavaScript 应用（尤其是使用 React、Vue 或 Node.js 的 OOP 风格代码）时非常有用。
+### 1. 环绕执行模式 (Execute Around Method)
+核心思想：
+当有一对操作必须成对出现（如“打开/关闭”、“开始/结束”、“锁定/解锁”）时，不要让调用者去手动管理这两个步骤，因为他们很容易忘记后一步。你应该提供一个方法，接受一个函数作为参数，在这个方法内部自动处理“收尾”工作 。
+JavaScript 实践：
+利用 JavaScript 的高阶函数（Higher-Order Function）来封装这种模式。
+- **Bad (容易导致资源泄漏):**
+ ```JavaScript
+    const db = new DatabaseConnection();
+    await db.open();
+    try {
+      await db.query('SELECT * ...');
+      // 如果这里报错，close() 可能永远不会执行，或者必须写重复的 finally
+    } finally {
+      await db.close();
+    }
+```    
+- **Good (Execute Around):**
+```JavaScript
+    // 在类中定义这个通用模式
+    class Database {
+      // 接收一个 block (函数)
+      async execute(action) {
+        const connection = await this.open();
+        try {
+          return await action(connection); // 执行传入的逻辑
+        } finally {
+          await this.close(); // 保证关闭 
+        }
+      }
+    }
+    
+    // 调用者的代码变得极其干净
+    await db.execute(async (conn) => {
+      await conn.query('SELECT * ...');
+    });
+```
+### 2. 可插拔行为 (Pluggable Behavior)
+
+核心思想：
+当一个对象的某些逻辑需要变化时，不要写一堆子类（Subclassing），也不要写复杂的 switch 语句。你可以在对象内部存一个变量，这个变量存的是一个函数或策略对象。当需要执行该逻辑时，直接调用这个变量 。
+这就是现在的“策略模式”或简单的“回调函数”注入。
+- **Bad (硬编码逻辑):**
+```JavaScript
+    class Button {
+      onClick() {
+        if (this.type === 'submit') { this.submitForm(); }
+        else if (this.type === 'reset') { this.resetForm(); }
+      }
+    }
+```
+- **Good (Pluggable Selector / Block):**
+```JavaScript
+    class Button {
+      constructor(action) {
+        this.action = action; // 存储一个函数 [cite: 1232]
+      }
+    
+      onClick() {
+        // 直接执行存储的行为，Button 不需要知道具体的业务逻辑 [cite: 1233]
+        if (this.action) this.action();
+      }
+    }
+    
+    // 使用时“插入”行为
+    const submitBtn = new Button(() => form.submit());
+    const logBtn = new Button(() => console.log('Clicked'));
+```
+
+### 3. 委托代替继承 (Delegation)
+
+核心思想：
+如果你想复用另一个类的代码，但又不想继承它（因为不需要它的所有方法，或者已经继承了别的类），那就把那个类的实例作为一个属性存在自己这里，然后把任务“委派”给它去做 
+
+组合优于继承（Composition over Inheritance）。
+- **场景**: 你有一个 `UserList` 类，你想让它拥有数组的一些功能（比如 `filter`），但不想继承 `Array`。
+- **JS 示例**:
+```JavaScript
+    class UserList {
+      constructor() {
+        this.users = []; // 内部持有一个数组 (Common State)
+      }
+      add(user) {
+        // 简单委托 (Simple Delegation)：直接叫内部的 users 去做
+        this.users.push(user);
+      }
+      // 可以在委托前后加自己的逻辑
+      filterActive() {
+        return this.users.filter(u => u.isActive);
+      }
+    }
+```
+
+### 4. 间接变量访问 (Indirect Variable Access)
+核心思想：
+即使在类的内部，是否应该直接访问属性（如 this.count）还是通过 Getter 方法（如 this.getCount()）
+书中的建议是：为了灵活性，尽量使用间接访问（即 Getter/Setter）。这样如果你以后想把“直接读取变量”改成“惰性计算（Lazy Initialization）”，你只需要改 Getter 一个地方，而不需要改全类所有的引用点。
+
+**JavaScript 实践**：
+- **Direct Access (直接访问 - 简单但僵化):**
+```JavaScript
+    class Circle {
+      constructor(radius) {
+        this.radius = radius;
+      }
+      area() {
+        // 如果 radius 以后变成了通过计算获取，这里也得改
+        return Math.PI * (this.radius * this.radius);
+      }
+    }
+```
+
+- **Indirect Access (间接访问 - 灵活):**
+```JavaScript
+    class Circle {
+      constructor(radius) {
+        this._radius = radius;
+      }
+    
+      // Getter Method [cite: 1552]
+      get radius() {
+        return this._radius;
+      }
+    
+      area() {
+        // 使用 getter，而不是直接用 this._radius [cite: 1545]
+        return Math.PI * (this.radius * this.radius);
+      }
+    }
+```
+
+指导意义：当你在 JS 中使用 `get` 关键字时，你就在实践这个模式。它允许你未来在不破坏 `area()` 方法的前提下，给 `radius` 增加日志、验证或惰性加载逻辑。
+
+### 5. 转换器方法 (Converter Method)
+
+核心思想：
+
+如果你需要把一个对象转换成另一种格式，提供一个以 as 开头的方法。这让转换的意图非常清晰 。
+
+在 JS 中，我们常有 toJSON, toString, toArray 等方法。
+- **JS 示例**:
+```JavaScript
+    class User {
+      // ... 属性包含 id, name, passwordHash ...
+    
+      // Converter Method [cite: 566]
+      asDTO() {
+        // 返回一个只包含前端需要数据的新对象
+        return {
+          id: this.id,
+          name: this.name
+        };
+      }
+    }
+    
+    // 调用
+    res.json(user.asDTO());
+```
+
+### 6. 级联 (Cascade) / 链式调用
+
+核心思想：
+
+如果你需要对同一个对象连续发送多条消息（调用多个方法），可以通过特定的格式或设计，避免重复写接收者的名字 。
+在 JS 中，这通常通过让方法 return this 来实现（Fluent Interface）。
+- **Bad (重复接收者):**
+```JavaScript
+    const config = new Config();
+    config.setUrl('http://api.com');
+    config.setTimeout(5000);
+    config.setRetries(3);
+```
+- **Good (Cascade / Chaining):**
+```JavaScript
+    class Config {
+      setUrl(url) {
+        this.url = url;
+        return this; // Interesting Return Value: 返回 self [cite: 2811, 2837]
+      }
+      setTimeout(time) {
+        this.timeout = time;
+        return this;
+      }
+      // ...
+    }
+    
+    // 调用
+    const config = new Config()
+      .setUrl('http://api.com')
+      .setTimeout(5000)
+      .setRetries(3);
+```
+### 7. 查找缓存 (Lookup Cache)
+核心思想：
+如果你有一个计算或查找过程非常耗时（比如 detect 或 select），并且数据不会频繁变动，你可以用一个 Dictionary（在 JS 中是 Map 或 对象）作为缓存。读取时先查缓存，没有再计算并存入。
+JavaScript 实践：
+简单的 Memoization（记忆化）。
+```JavaScript
+    class ProductService {
+      constructor() {
+        this.products = [...]; // 假设有很多数据
+        this.cache = new Map(); // Lookup Cache 
+      }
+    
+      getProduct(id) {
+        // 如果缓存里有，直接返回
+        if (this.cache.has(id)) {
+          return this.cache.get(id);
+        }
+        // 复杂的查找逻辑
+        const product = this.products.find(p => p.id === id);
+    
+        // 存入缓存
+        this.cache.set(id, product);
+        return product;
+      }
+    }
+```
+
+下面模式涵盖了从微观的代码排版到宏观的对象交互设计
+### 1. 行为与消息 (Behavior & Messages)
+这部分关于如何让对象之间更优雅地沟通。
+- **分解消息 (Decomposing Message)** 
+    - 当你有一个复杂的任务时，不要直接写一长串代码。发送一个消息给自己（`self`），把这个任务分解成几个更小的步骤。这就像把一个大程序拆分成几个子程序，有助于理清思路。
+- **反向发送 (Send Back)** 
+    - 当你委托另一个对象做事时，如果那个对象需要你的一些信息，它会把消息“发回”给你。不要害怕这种来回调用，这是对象间协作的常态。
+- **Super 的使用 (Extending vs. Modifying Super)** 
+    - **扩展 (Extending)**：如果你想在父类功能的基础上增加功能，重写方法并在其中调用 `super`。
+    - **修改 (Modifying)**：如果你想改变父类的行为，依然可以重写，但如果不调用 `super` 或者在特定位置调用，就意味着你改变了原本的逻辑流。
+- **收集参数 (Collecting Parameter)** 
+    - 如果你需要从多个方法中收集结果（例如遍历一棵树并收集所有节点），不要让每个方法都返回集合然后合并。相反，创建一个集合对象，把它作为参数传递给所有方法，让它们把结果加进去。
+### 2. 状态与变量 (State & Variables)
+这部分关于如何处理对象的数据。
+- **创建参数方法 (Creation Parameter Method)** 
+    - **指导**：在初始化对象时，如果需要设置多个变量，不要写一堆 `setX:`, `setY:`。创建一个单一的方法（如 `setX:y:`），一次性设置所有相关的变量，并利用这个机会进行初始化检查。
+- **默认值方法 (Default Value Method)** 
+    - **指导**：如果一个变量有默认值，不要把这个值硬编码在初始化方法里。创建一个专门的方法（如 `defaultColor`）返回这个值。这样子类可以通过重写这个小方法来轻松改变默认值。
+- **常量方法 (Constant Method)** 
+    - **指导**：避免使用全局常量池。如果一个类需要用到常量（比如 π 或某个固定的配置值），把它写成一个返回该值的方法。
+- **布尔属性设置 (Boolean Property Setting Method)** 
+    - 对于布尔类型的属性（如开关），不要只提供 `setSwitch: true/false`。提供更语义化的方法，如 `turnOn`（打开）和 `turnOff`（关闭），或者 `makeVisible` / `makeInvisible`。
+- **重用临时变量 (Reusing Temporary Variable)** 
+    - **指导**：通常我们要避免重用变量，但如果在处理像流（Stream）这样读一次就变的状态时，或者表达式有副作用时，应该把结果存入临时变量，以便在后续代码中多次使用该结果，避免重复执行副作用。
+### 3. 集合的高级用法 (Collections)
+除了基本的遍历，书中还介绍了一些特定的集合模式。
+- **栈与队列 (Stack & Queue)** 
+    - **指导**：Smalltalk（以及很多现代语言标准库）没有专门的 Stack 类。使用 `OrderedCollection`（或数组/列表）来模拟。
+        - **Stack**: `addLast:` (push), `removeLast` (pop). 
+        - **Queue**: `addLast:` (enqueue), `removeFirst` (dequeue). 
+- **解析流 (Parsing Stream)** 
+    - **指导**：如果你在编写解析器，不要把流对象在每个方法间传以此参数。把流作为实例变量存储在解析器对象中，这样所有方法都能共享当前的解析位置。
+- **连接流 (Concatenating Stream)** 
+    - **指导**：当你需要拼接大量字符串或集合时，不要反复使用 `+` 或 `,`（连接符），这会产生大量中间垃圾对象。使用 `Stream`（在 JS 中类似 `StringBuilder` 或 `Array.join`）来高效构建结果。
+- **字面量搜索 (Searching Literal)** 
+    - **指导**：如果你要判断一个值是否属于某几个特定值之一（如 `isVowel`），不要写一长串 `if (a == 'a' || a == 'e' ...)`。创建一个包含这些值的集合（字面量数组），然后问它 `includes:`。
+        - _示例:_ `^#('a' 'e' 'i' 'o' 'u') includes: aChar`。
+
+### 4. 格式化 (Formatting)
+这部分关于如何让代码视觉上更易读。
+- **内联消息模式 (Inline Message Pattern)** 
+    - **指导**：为了节省垂直空间，尽量把方法的参数定义写在一行里，而不是每个参数换一行（除非参数特别多）。让读者一眼能看到方法体。
+- **类型暗示参数名 (Type Suggesting Parameter Name)** 
+    - **指导**：参数命名要暗示其类型。例如 `at: index` 暗示索引是整数，`at: key` 暗示键可能是任意对象。使用 `aString`, `anInteger` 这样的命名风格。
+- **矩形块 (Rectangular Block)** 
+    - **指导**：对于闭包（Block/Lambda），如果内容很简单，写在一行。如果复杂，利用缩进让它看起来像一个矩形，让眼睛能快速识别代码块的范围。
+- **条件表达式 (Conditional Expression)** 
+    - **指导**：利用控制结构（如 if-else）会返回值的特性。
+        - _Bad:_ `if (test) { return 1; } else { return 2; }`
+        - _Good:_ `return test ? 1 : 2;` (或者在 Smalltalk 中直接返回 if 表达式的结果)。意图是“返回两个值中的一个”，而不是“执行两条路径中的一条”。
+- **Yourself** 
+    - **指导**：当你使用级联消息（Cascade，即链式调用）配置一个对象时，如果最后一个方法返回的不是对象本身，而你需要这个对象，请在最后加上 `yourself`（返回 `self`）。这确保整个表达式的值是你正在配置的那个对象。
+- **有意义的返回值 (Interesting Return Value)** 
+    - **指导**：只有当调用者真正需要用到返回值时，才显式返回一个值。否则，默认返回对象本身（在 Smalltalk 中）或者 `void`，不要让调用者去猜测返回值的含义。
+
+这些模式共同构成了一套完整的编码哲学：**清晰 (Clarity)** 优于 **效率 (Efficiency)**（除非有性能瓶颈），**沟通 (Communication)** 优于 **简洁 (Brevity)**。
+
+
+
+## 原文摘抄
+
+1 ）
+“软件开发中所有的瓶颈，归根结底都来自于人类沟通的局限性。”
+原文："The bottlenecks throughout development come from limitations in human communication."
+
+2）
+编程高手的秘诀，往往在于那些新手容易忽略的简单习惯。
+原文："This book is about the simple things experienced, successful Smalltalkers do that beginners don't."
+3）
+编码是将你那些模糊而舒适的想法，在现实的严酷黎明中唤醒的过程。
+原文："Coding is where your fuzzy comfortable ideas awaken in the harsh dawn of reality."
+4）
+代码不会撒谎。如果你不倾听，就听不到它诉说的真相。
+原文："Code doesn't lie. If you're not listening, you won't hear the truths it tells."
+5）
+你必须思考别人将如何阅读你的代码，而不仅仅是计算机将如何解释它。
+原文："You have to think about how someone will read your code, not just how a computer will interpret it."
+6）
+模式是一种文学形式，用于捕捉和传递那些通用的最佳实践。
+原文："Patterns are a literary form for capturing and transmitting common practice."
+7）
+没有哪个话题能比‘代码格式化’引发更多的争吵，却带来更少的真知灼见。
+No other topic generates more heat and less light than code formatting.
+8）
+在风格优秀的代码中，每一件事都只说一次，且仅说一次。
+原文："In a program written with good style everything is said once and only once."
+9）
+永远不要把两种不同变化率的东西放在一起。
+原文："Don't put two rates of change together."
+10）
+将程序拆分成一个个只完成单一、可识别任务的小方法。
+原文："Divide your program into methods that perform one identifiable task."
+11）
+任何对 `super` 的显式调用，都在某种程度上降低了代码的灵活性。
+原文："Any use of super reduces the flexibility of the resulting code."
+12）
+你是在创造词汇，而不只是在写程序。此时此刻，请做一个诗人。
+You’re creating a vocabulary, not writing a program. Be a poet for a moment.
+13）
+搞对了‘行为’比搞对‘状态’更重要。对象让系统不再是数据表象的奴隶。
+原文："Behavior is the more important to get right... No longer is your system a slave of its representation."
+14）
+实例变量的作用是公开且一劳永逸地声明：‘这就是我用这个对象所构建的模型’。
+原文："Instance variables... say, once and for all and out in the open, 'here's what I'm modeling with this object'."
+15）
+如果你的程序突然变得难以驾驭，那是它在对你说话，告诉你有些重要的东西缺失了。
+原文："If... all of a sudden your program gets balky... it's talking. It's telling you there is something important missing."
+16）
+最大的改进往往来自于弄清楚如何消除：
+- 重复代码（即使是一小部分）
+- 条件逻辑
+- 复杂的方法
+- 结构性代码（即一个对象将另一个对象仅仅视为数据结构）
+_原文：_ Some of the biggest improvements come from figuring out how to eliminate:
+- Duplicate code (even little bits of it)
+- Conditional logic
+- Complex methods
+- Structural code, where one object treats another as a data structure
+
+17）
+消息传递确实需要时间。如果只关心程序运行速度，你大可以把所有代码写在一个巨大的方法里。但这种激进的优化方式会带来巨大的人力成本，并且忽略了一个事实：在一个结构良好的代码基础上进行性能调优，往往能带来数量级的提升（而不是微小的优化）。
+_原文：_ "Messages take time... If all you were worried about was how fast your program would run, you would arrange all of your code in a single method. This radical approach to performance tuning invokes enormous human costs, and ignores the realities of performance tuning well-structured code, which often results in several order-of-magnitude improvements."
+
+
+## 参考
+
+1. 原书： http://stephane.ducasse.free.fr/FreeBooks/BestSmalltalkPractices/Draft-Smalltalk%20Best%20Practice%20Patterns%20Kent%20Beck.pdf
+2. 中文版： https://aistudio.google.com/app/prompts/1VR1QBKwZgJ549pr-AX3fvxuO9jsH7JbC
+3. notebookLM解析： https://notebooklm.google.com/notebook/ca2d4c1c-c427-4daa-a750-df4988b2e3ab
+
+---
+此文自动发布于：<a href="https://github.com/coderPerseus/blog/issues/90" target="_blank">github issues</a>
