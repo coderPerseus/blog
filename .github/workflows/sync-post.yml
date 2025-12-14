@@ -16,6 +16,13 @@ on:
       - reopened
       - committed # 修改？
   workflow_dispatch:
+
+# Avoid overlapping runs when multiple issue events happen in quick
+# succession (e.g., labeling and editing) to prevent duplicate CI
+# executions for the same trigger.
+concurrency:
+  group: sync-post-${{ github.event.issue.number || github.run_id }}
+  cancel-in-progress: true
 env:
   GH_TOKEN: ${{ secrets.GH_TOKEN }}
   GH_USER: ${{ secrets.GH_USER }}
