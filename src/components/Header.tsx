@@ -26,6 +26,10 @@ import dynamic from 'next/dynamic';
 const ThemeToggle = dynamic(() => import('./ThemeToggle'), {
 	ssr: false
 });
+
+const ChristmasTreeButton = dynamic(() => import('./ChristmasTreeButton'), {
+	ssr: false
+});
 export function Header() {
 	const isHomePage = usePathname() === '/';
 
@@ -272,6 +276,9 @@ export function Header() {
 								animate={{ opacity: 1, y: 0, scale: 1 }}
 							>
 								{/* <UserInfo /> */}
+								<div className="pointer-events-auto">
+									<ChristmasTreeButton />
+								</div>
 								<div className="pointer-events-auto">
 									<ThemeToggle />
 								</div>

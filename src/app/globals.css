@@ -57,12 +57,40 @@
 		--chart-4: 280 65% 60%;
 		--chart-5: 340 75% 55%;
 	}
+
+	.christmas {
+		--background: 141 45% 96%;
+		--foreground: 150 20% 10%;
+		--card: 141 60% 96%;
+		--card-foreground: 150 25% 15%;
+		--popover: 141 60% 96%;
+		--popover-foreground: 150 25% 15%;
+		--primary: 356 67% 48%;
+		--primary-foreground: 0 0% 98%;
+		--secondary: 142 35% 88%;
+		--secondary-foreground: 150 25% 15%;
+		--muted: 150 25% 90%;
+		--muted-foreground: 142 20% 32%;
+		--accent: 42 92% 68%;
+		--accent-foreground: 156 44% 16%;
+		--destructive: 0 84% 60%;
+		--destructive-foreground: 0 0% 100%;
+		--border: 142 25% 80%;
+		--input: 142 25% 84%;
+		--ring: 356 67% 48%;
+		--radius: 0.75rem;
+		--chart-1: 356 67% 48%;
+		--chart-2: 142 50% 38%;
+		--chart-3: 42 92% 68%;
+		--chart-4: 205 80% 72%;
+		--chart-5: 30 95% 64%;
+	}
 }
 /* 切换主题动画 */
 ::view-transition-old(root),
 ::view-transition-new(root) {
-  animation: none;
-  mix-blend-mode: normal;
+	animation: none;
+	mix-blend-mode: normal;
 }
 @layer base {
 	* {
@@ -70,5 +98,63 @@
 	}
 	body {
 		@apply bg-background text-foreground;
+	}
+}
+
+.christmas body {
+	background:
+		radial-gradient(
+			circle at 15% 20%,
+			rgba(255, 255, 255, 0.4),
+			transparent 30%
+		),
+		radial-gradient(
+			circle at 80% 10%,
+			rgba(255, 255, 255, 0.25),
+			transparent 28%
+		),
+		linear-gradient(
+			180deg,
+			rgba(35, 71, 45, 0.8) 0%,
+			rgba(16, 32, 23, 0.95) 60%,
+			rgba(22, 13, 20, 0.95) 100%
+		),
+		#0f1a12;
+	color: #0e1a14;
+}
+
+.christmas .holiday-frame {
+	background: linear-gradient(
+		135deg,
+		rgba(255, 255, 255, 0.9),
+		rgba(255, 245, 234, 0.85)
+	);
+	border: 1px solid rgba(255, 255, 255, 0.6);
+	box-shadow:
+		0 10px 45px rgba(20, 50, 30, 0.35),
+		0 0 0 1px rgba(255, 255, 255, 0.45);
+}
+
+.snow-layer {
+	position: absolute;
+	inset: 0;
+	background-image:
+		url('/christmas/snowflake.svg'), url('/christmas/snowflake.svg');
+	background-repeat: repeat;
+	background-size: 120px, 80px;
+	animation: snowfall 18s linear infinite;
+	opacity: 0.5;
+}
+
+@keyframes snowfall {
+	from {
+		background-position:
+			0 0,
+			0 0;
+	}
+	to {
+		background-position:
+			0 900px,
+			0 600px;
 	}
 }

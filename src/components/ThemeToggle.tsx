@@ -23,8 +23,12 @@ export default function ThemeToggle() {
 	useEffect(() => {
 		const link = document.createElement('link');
 		link.rel = 'stylesheet';
-		link.href =
-			theme === 'dark'
+		const isDark = theme === 'dark';
+		const isChristmas = theme === 'christmas';
+
+		link.href = isDark
+			? '/style/prism-gruvbox-light.css'
+			: isChristmas
 				? '/style/prism-gruvbox-light.css'
 				: '/style/prism-coldark-dark.css';
 		document.head.appendChild(link);

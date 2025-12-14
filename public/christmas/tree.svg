@@ -1,0 +1,17 @@
+<svg width="180" height="200" viewBox="0 0 180 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+<title id="title">Christmas Tree</title>
+<desc id="desc">Layered evergreen tree with ornaments</desc>
+<g fill="none" fill-rule="evenodd">
+  <polygon points="90 8 102 32 128 36 108 54 112 78 90 66 68 78 72 54 52 36 78 32" fill="#F7C948"/>
+  <polygon points="90 22 140 92 110 92 138 132 112 132 146 176 34 176 68 132 42 132 70 92 40 92" fill="#1E7A46"/>
+  <rect x="78" y="176" width="24" height="20" rx="4" fill="#9C6B3D"/>
+  <circle cx="70" cy="106" r="6" fill="#F0533D"/>
+  <circle cx="112" cy="112" r="6" fill="#FFF"/>
+  <circle cx="88" cy="142" r="6" fill="#F7C948"/>
+  <circle cx="116" cy="86" r="5" fill="#F7C948"/>
+  <circle cx="62" cy="82" r="5" fill="#FFF"/>
+  <circle cx="90" cy="60" r="4" fill="#F0533D"/>
+  <circle cx="128" cy="144" r="5" fill="#F7C948"/>
+  <circle cx="52" cy="134" r="5" fill="#F0533D"/>
+</g>
+</svg>
