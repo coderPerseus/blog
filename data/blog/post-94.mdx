@@ -1,0 +1,51 @@
+---
+title: 都 2026 年了，程序员拿到一台新 mac 怎么做？
+date: 2026-01-02T09:35:28Z
+slug: post-94
+author: coderPerseus：https://github.com/coderPerseus
+tags: ["AI","效率提升"]
+---
+
+大家新年好，我是 luckySnail，祝我的读者新的一年，马到成功，马上发财。如果你和我一样是程序员，那希望我们都“码”力全开。好了下面想跟大家分享一下，我最近是如何不到半小时就配置好一台新 Mac，如果你也刚好拿到一台新电脑，不管是 Mac 或者 Windows ，都可以参考我的配置思路
+
+## 联网 + 安装 Claude Code
+
+第一步当然是连上网络，然后进行下一步，这没啥好说的。
+然后去  https://claude.com/product/claude-code 使用 curl 安装 Claude Code（CC），安装成功后，你运行 claude 大概率会提示： `zsh: command not found: claude`，这时候还需要运行一行命令，配置一下环境变量，这样以后安装cli 工具都可以直接运行：
+```bash
+#在你的 `~/.zprofile`（或 `.zshrc`）里加上这几行
+
+# Common user binaries
+export PATH="$HOME/.local/bin:/opt/homebrew/bin:/opt/homebrew/sbin:$PATH"
+# 然后执行 source ./.zshrc
+```
+这样后面安装的 brew ，npm ，bun 等工具都可以直接使用了！
+好了，当我们安装成功了 CC ，下面的事情就变得极其简单了～
+
+## GUI APP 安装
+
+打开 CC，然后告诉它你要安装的应用 ，让它使用 brew 帮你安装，你只需要等待完成后收货即可，下面是我安装的应用列表：
+```bash
+brew install --cask tencent-meeting feishu wechat wetype neteasemusic google-chrome wpsoffice doubao iterm2 typeless microsoft-edge capcut visual-studio-code webstorm cleanshot sourcetree picgo obsidian
+```
+如果你知道你需要安装的列表，那可以直接一行命令，如果你不知道可以让 CC 帮你
+## CLI 
+
+和安装 GUI app 一样，你可以选择和 CC 对话或者运行命令：
+```bash
+brew install ffmpeg gh git tree wget fnm
+```
+
+## 终端美化
+
+告诉 claude：
+```bash
+安装终端美化工具： https://ohmyz.sh/ ，使用主题： powerlevel10k 并且安装插件：  zsh-syntax-highlighting zsh-autosuggestions 
+```
+
+## 结语
+
+过往，配置一台新的电脑至少需要一个小时，但是有了 AI，强烈建议先安装一个 AI CLI Agent ，然后把其他的事情都交给它，它不仅仅干的快，还干得好。配置环境，折腾终端在 AI 时代已经变得极其简单
+
+---
+此文自动发布于：<a href="https://github.com/coderPerseus/blog/issues/94" target="_blank">github issues</a>
