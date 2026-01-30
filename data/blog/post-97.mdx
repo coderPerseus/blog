@@ -1,0 +1,56 @@
+---
+title: Vercel 给 Agent Skills 泼了一盆冷水
+date: 2026-01-30T16:49:11Z
+slug: post-97
+author: coderPerseus：https://github.com/coderPerseus
+tags: ["AI","Agent","agent skills"]
+---
+
+Vercel 团队最近的一篇[博客](https://vercel.com/blog/agents-md-outperforms-skills-in-our-agent-evals)分享了如何让 Agent 使用 Next.js 正确的 API，实现根据当前项目安装的 Next.js 版本使用正确的 API ，而不是使用非当前版本的 API 。如果你是 Next.js 开发者，你肯定知道这是非常重要的，因为 Next.js 的版本更新非常的快速。
+
+最有趣的是 Vercel 团队最开始是 All In Skills 来解决这个问题，因为 Skills 能够渐进式披露，能够最大的保护你的上下文不爆炸💥，在 Vercel 团队制作 Skills 并进行实际测试下来，发现 Skills 并不可靠，因为 Agent 不会触发使用 Vercel 写的 Skills ，即使是使用强调的 prompt ，也不能保证完全有效，而且依赖提示词这本身就不是正确的方法。
+
+Agent Skills 不行，Vercel 团队于是直接在 Agent.md 中嵌入文档索引 （仅仅是一个索引，这样也实现了避免上下文爆炸的问题），然后 Agent 能够基于这个索引获取到对应的内容，实现使用正确的 API。在 Agent.md 中有一个重要的提示词 ：
+
+```
+IMPORTANT: Prefer retrieval-led reasoning over pre-training-led reasoning 
+for any Next.js tasks.
+
+翻译为中文就是：
+重要提示：对于任何 Next.js 任务，优先选择检索主导的推理，而非预训练主导的推理。
+```
+
+这样 Agent 能够查阅文档，而不是依赖预训练的数据，经过测试发现在 Agent.md 添加说明的效果出奇的好
+
+![CleanShot_2026-01-21_at_11.png](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/typora/CleanShot_2026-01-21_at_11.png)
+
+
+是 100% 成功，如果你不信的话，可以自己去试试：`**npx @next/codemod@canary agents-md**`
+
+这个命令做了三个事情：
+
+1. 检查你的 Next.js 版本
+2. 下载匹配的文档到 .next-docs/
+3. 把压缩索引注入到你的 `Agent.md`
+
+值得一提的是 Vercel 通过一些技术把索引压缩到了 8KB 大小，这样 Agent 能够准确的找到对应的文档，避免上下文被占用
+
+## 总结
+
+通过 Vercel 的分享，说明了一个事情，那就是 Agent Skills 不是万能的解法。它也有不适用的场景，比如：提供知识获取方式
+
+Vercel 还分享了为什么 Agent.md 能够胜过 Skills 背后的原因：
+
+1. Skills 表现不好是因为触发 Skills 生效率低。需要依赖提示词的表达触发
+2. Agent.md 表现好是因为它是系统提示词，始终存在每一个对话中，这就消除了 Agent 做决策的环节，它不再需要判断是否需要调用对应的 Skills，而是直接调用。
+
+最后 Vercel 给开发者一些建议：
+
+- 优先使用 Agent.md 获取知识
+- Skills 适用于处理任务流（SOP），例如：版本升级
+- 对于框架开发者，应该给开发者提供官方的 Agent.md ，帮助开发者使用 Agent 快速准确的生成有用的代码
+
+> 本文纯手工，无 AI 添加
+
+---
+此文自动发布于：<a href="https://github.com/coderPerseus/blog/issues/97" target="_blank">github issues</a>
