@@ -1,0 +1,157 @@
+---
+title: 实测智谱 GLM 5.1 对比 Kimi K2.6-code-preview
+date: 2026-04-21T01:01:36Z
+slug: post-108
+author: coderPerseus：https://github.com/coderPerseus
+tags: ["AI","LLM"]
+---
+
+别再抢智谱了，实测 Kimi 最新的 K2.6-code-preview 碾压 GLM 5.1 
+
+
+由于 Claude Code 越来越严厉，给 Claude 送钱送不了，于是我下单了国产的顶级模型智谱 的 Max 套餐，实测使用后发现效果还是不太行。
+
+![image-20260420120746536](https://pub-0d530dc48245462d8f3734870a46cd58.r2.dev/image-20260420120746536.png)
+于是我又买了 Kimi 的 Max 套餐，刚好它最新发布了 K2.6-code-preview ，下面通过两个例子就可以让大家直观并且全方位的看出来两个模型的差距，在编程方面 kimi 绝对是超过了 智谱，趁现在知道的人还不多，大家赶紧去下单，感觉被发现后应该也是会一抢而空，而且最近看到 kimi 在招聘 AI infra 工程师，估计是为了后面大量流量涌入做准备
+
+![image-20260420121125143](https://pub-0d530dc48245462d8f3734870a46cd58.r2.dev/image-20260420121125143.png)
+我的测试环境如下：
+
+1.  在 Mac 设备使用 Claude Code 作为 harness agent ，使用 TypeScript 作为编程语言
+2.  通过两个任务：**模板项目搭建**和**博客项目**开发进行全方面的测评，使用相同的提示词和环境
+3.  使用 Claude 模型 作为代码和系统架构质量测评官，我负责实际测试效果并给出结论
+
+好了，相信你已经很好奇了，让我们进入正题（对了，如果你想看怎么给 GLM，Kimi 接入 Claude Code ，请看文末）：
+
+
+
+### 1）fastify 模板项目搭建
+
+提示词如下：
+
+```bash
+现在搜索网络，基于网络帮我创建一个轻量的高质量的 fastify typescript starter模板，我来作为后端服务基础starter，还有就是我需要你使用 git 进行每一个点提交一次commit ，最后完成后使用 gh 发布这个项目
+```
+
+通过上面的提示词可以考验模型网络信息收集整理，需求理解，任务拆解等能力。下面看一下 kimi 和 glm 的完成效果
+
+**kimi**：
+
+![image-20260420164824600](https://pub-0d530dc48245462d8f3734870a46cd58.r2.dev/image-20260420164824600.png)
+启动后是能够正常访问 api 服务
+
+**GLM**：
+
+![image-20260420170444307](https://pub-0d530dc48245462d8f3734870a46cd58.r2.dev/image-20260420170444307.png)
+启动后不能正常工作，修复了一次 bug 才工作
+
+最后我让 Claude Code 进行代码分析，结果也是：Kimi 胜出
+
+![image-20260420191549080](https://pub-0d530dc48245462d8f3734870a46cd58.r2.dev/image-20260420191549080.png)
+这里的 fastify-demo 就是 kimi 的版本，Claude code 给出了清晰的理由说明为什么 kimi 的实现更好
+
+### 长任务测试
+
+提示词如下：
+
+```bash
+现在要重构我的博客，它的网址是：https://luckysnail.cn/ ，对应的 GitHub 地址是：https://github.com/coderPerseus/blog ，现在我希望重构为使用 astro 构建，基于 https://github.com/chrismwilliams/astro-theme-cactus 这个搭建我的博客系统，要求：
+1. 基于astro-theme-cactus 目前的简洁的UI进行优化 UI和页面设计，看起来更加美观，具有中国元素，但是保持简洁
+2. 使用合适的浅紫色作为主题
+3. 同步目前博客的数据，目前的数据都是存在 GitHub issues 里面，我希望继续使用这个仓库的 issues 作为数据源
+4. 我希望它是AI友好的，博客支持AI自动翻译为英文版本，开头有AI简单总结
+5. 支持中英文，支持明亮和暗色主题（切换的时候有动效）
+```
+、
+这个是一个比较大的复杂的任务，需要很多步骤才能完成，同时考验了 AI 模型的：
+
+- 长时间任务执行
+- 前端审美
+- 后端数据 和 AI 接入能力
+- 基于已有的数据和资源进行工作，这也是日常工作中最常见的场景
+
+经过漫长的半小时左右，两个模型都完成了自己的工作，下面看看效果
+
+**Kimi**：
+
+![image-20260420194352943](https://pub-0d530dc48245462d8f3734870a46cd58.r2.dev/image-20260420194352943.png)
+智谱 GLM：
+![image-20260420203037591](https://pub-0d530dc48245462d8f3734870a46cd58.r2.dev/image-20260420203037591.png)
+
+可以很明显看出来，智谱的实现根本不行，而且最初还是报错的，这对一个 Vibe Coding 的人来说是根本不达标的
+
+由于好奇，我又使用同样的提示词横向对比一下 MiniMax  和 Codex
+
+MiniMax：
+
+![image-20260420200408594](https://pub-0d530dc48245462d8f3734870a46cd58.r2.dev/image-20260420200408594.png)
+Codex：
+![image-20260420194435507](https://pub-0d530dc48245462d8f3734870a46cd58.r2.dev/image-20260420194435507.png)
+
+这里没有让 Claude 模型来开发，主要有两个原因：
+
+1.  需要让 Claude 做裁判，如果有一个成员是 Claude 自己就可能会不公平
+2.  Claude 实在是太贵了～ ，让它跑的话估计还没跑完我 5 小时的额度就没有了
+
+下面让我们来看看 Claude 模型对以上四个模型的代码和效果的总结吧～
+
+![image-20260420193729999](https://pub-0d530dc48245462d8f3734870a46cd58.r2.dev/image-20260420193729999.png)
+这是我的提示词，下面看一下结论：
+![image-20260420193805997](https://pub-0d530dc48245462d8f3734870a46cd58.r2.dev/image-20260420193805997.png)
+这里的结论是 Codex 最好，其次是 Kimi ，Codex 的实现虽然有双语，但其实没有真正实现，如果不看代码，我觉得 Kimi 才是最好的，因为 Kimi 的前端审美是在线的 ，Codex 在处理前端审美上确实差了不少～
+
+### 真实项目开发体验
+
+测试完成后，我又在真实的项目环境深度使用了两天 kimi 的 K2.6-code-preview  模型，更加确信了它是真的强👍下面是一个我在使用 Codex 两次都没有解决，然后让 Kimi 一次修复的记录：
+
+问题是在滚动区域确认点击后自动滚动顶部问题修复
+![image-20260420142324178](https://pub-0d530dc48245462d8f3734870a46cd58.r2.dev/image-20260420142324178.png)
+我使用 Codex 5.4 两次都没有成功修复的问题，没想到 Kimi 一次就完成了～ codex 是我心目中 debug 最强大的模型，没想到在这里输给了 Kimi，最后也是让 Codex 去学习了一下国产之光 Kimi 的解决问题思路
+![image-20260420143742036](https://pub-0d530dc48245462d8f3734870a46cd58.r2.dev/image-20260420143742036.png)
+## 总结
+
+通过测试和深度使用，我觉得 kimi 的 K2.6-code-preview  绝对是一个还没有被发现的黑马，如果你还在考虑订阅一个什么大模型，我推荐你可以入手 Kimi 的入门套餐 ，一月 49 ，正常应该也使用不完～
+
+
+## MiniMax ，Kimi，GLM 接入 Claude Code
+
+```bash
+# MiniMax
+export ANTHROPIC_AUTH_TOKEN=sk-xxx
+export ANTHROPIC_BASE_URL=https://api.minimax.io/anthropic
+export ANTHROPIC_DEFAULT_OPUS_MODE=MiniMax-M2.7
+export ANTHROPIC_SMALL_FAST_MODEL=MiniMax-M2.7
+export ANTHROPIC_DEFAULT_SONNET_MODEL=MiniMax-M2.7
+export ANTHROPIC_DEFAULT_HAIKU_MODEL=MiniMax-M2.7
+export API_TIMEOUT_MS=3000000
+export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
+# kimi
+export ANTHROPIC_BASE_URL=https://api.kimi.com/coding/
+export ANTHROPIC_API_KEY=sk-xxx
+export ANTHROPIC_DEFAULT_OPUS_MODE=K2.6-code-preview
+export ANTHROPIC_DEFAULT_SONNET_MODEL=K2.6-code-preview
+export ANTHROPIC_DEFAULT_HAIKU_MODEL=K2.6-code-preview
+export API_TIMEOUT_MS=3000000
+export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
+# zai glm
+export ANTHROPIC_AUTH_TOKEN=xxx
+export ANTHROPIC_BASE_URL=https://open.bigmodel.cn/api/anthropic
+export ANTHROPIC_DEFAULT_OPUS_MODE=glm-5.1
+export ANTHROPIC_DEFAULT_SONNET_MODEL=glm-5.1
+export ANTHROPIC_DEFAULT_HAIKU_MODEL=glm-5.1
+export API_TIMEOUT_MS=3000000
+export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
+```
+
+由于我还有公司给订阅的官方 Claude 服务，所以我使用一般都是直接在终端粘贴上面对应的服务，然后在对应窗口临时使用，使用 paste 剪切板工具来管理还是很方便的
+
+就是在终端会提示如下，不过没有关系正常使用即可
+
+![image-20260420164648079](https://pub-0d530dc48245462d8f3734870a46cd58.r2.dev/image-20260420164648079.png)
+
+感谢你的阅读，希望这篇文章对你选择AI服务方面有帮助～
+
+（本文纯手工，无任何 AI 添加）
+
+---
+此文自动发布于：<a href="https://github.com/coderPerseus/blog/issues/108" target="_blank">github issues</a>
