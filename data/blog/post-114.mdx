@@ -1,0 +1,205 @@
+---
+title: Codex 越用越慢，背后的原因已找到并治好
+date: 2026-05-21T11:00:58Z
+slug: post-114
+author: coderPerseus：https://github.com/coderPerseus
+tags: ["AI"]
+---
+
+
+
+最近很多人会遇到一个现象：以前敲一下 `codex` 很快就进去了，现在启动越来越慢，终端里卡在一堆 `Booting MCP server...`、`Starting MCP servers...` 上，
+
+但实际排查下来，其实不是 Codex 主程序慢，也不是模型慢，而是它启动时顺手拉起了太多周边服务。
+
+可以把 Codex CLI 想成一个编辑器。编辑器本身打开不慢，但如果你装了一堆插件，每次打开都要启动浏览器插件、云服务插件、设计工具插件、文件系统插件，那开机自然会变慢。
+
+## 启动时它到底在做什么
+
+运行：
+
+```bash
+codex --dangerously-bypass-approvals-and-sandbox
+```
+
+Codex 启动时大概会做这些事：
+
+1. 读取 `~/.codex/config.toml`
+2. 读取登录状态和本地数据库
+3. 加载 skills
+4. 加载插件
+5. 启动 MCP servers
+6. 启动内置的 Apps / Connectors 能力
+7. 进入 TUI 界面
+
+前几步通常很快。最容易慢的是第 5 和第 6 步，也就是各种 MCP 服务。
+
+MCP 可以理解成 Codex 的外接工具接口。比如让 Codex 控制浏览器、调用 Cloudflare、操作桌面应用、读取设计工具，这些能力很多都是通过 MCP 接进来的。
+
+## 为什么会越来越慢
+
+刚开始可能只有一个裸的 CLI，后来加了浏览器、Playwright、Chrome DevTools、Computer Use、Cloudflare、GitHub、Notion、Pencil、各种插件。每加一个，就多一个启动项。
+
+这就像电脑开机。刚买回来很快，后来微信、飞书、网盘、Docker、代理、输入法、各种同步软件都设置成开机启动，开机自然越来越慢。Codex 也是一样。
+
+比如这类配置：
+
+```toml
+[mcp_servers.playwright]
+command = "npx"
+args = ["@playwright/mcp@latest"]
+
+[mcp_servers.chrome-devtools]
+command = "npx"
+args = ["-y", "chrome-devtools-mcp@latest", "--autoConnect"]
+
+[mcp_servers.pencil]
+command = "/Applications/Pencil.app/Contents/Resources/app.asar.unpacked/out/mcp-server-darwin-arm64"
+args = ["--ws-port", "49458"]
+```
+
+每次启动 Codex，它都可能去启动这些服务。
+
+如果里面还有 `npx ...@latest`，那启动时还会经过 npm/npx 的解析流程。即使包已经缓存了，也比直接执行本地固定路径慢。
+
+## 最常见的几个慢点
+
+1. MCP 服务太多：所以对于不用的 MCP 要定时清理
+2. 远程服务登录过期：如果你的 MCP 服务还需要登录，那么可能登录过期也会导致启动变慢
+3. 本地服务连不上：比如我电脑的 Pencil MCP 一直提示：`failed to connect WebSocket: dial tcp [::1]:49458: connect: connection refused` ，这个过程会占据几秒
+4. `npx @latest` 每次启动都慢
+
+像这种配置：
+
+```toml
+command = "npx"
+args = ["@playwright/mcp@latest"]
+```
+
+优点是方便，缺点是启动时不够干脆。
+
+更好的做法是把包固定安装到本地，然后配置成固定版本或固定路径。这样 Codex 不用每次问 npm：最新包在哪、要不要解析、缓存有没有命中。
+
+## 怎么快速判断是不是 MCP 拖慢
+
+可以先跑一个轻量 ba'sh 测试：
+
+```bash
+codex --disable apps --disable plugins \
+  -c 'mcp_servers.playwright.enabled=false' \
+  -c 'mcp_servers.chrome-devtools.enabled=false' \
+  -c 'mcp_servers.pencil.enabled=false' \
+  --dangerously-bypass-approvals-and-sandbox
+```
+
+如果这样明显变快，基本就能确定：慢点在 Apps、Plugins 或 MCP，不在 Codex 主程序。
+
+这条命令不会改配置文件，只是本次启动临时禁用。
+
+## 慢的解法
+
+先看列表：
+
+```bash
+codex mcp list
+```
+
+再看某个服务详情：
+
+```bash
+codex mcp get playwright
+codex mcp get chrome-devtools
+codex mcp get cloudflare-api
+```
+
+不用的就移除：
+
+```bash
+codex mcp remove playwright
+codex mcp remove chrome-devtools
+codex mcp remove pencil
+```
+
+登录过期的就重新登录：
+
+```bash
+codex mcp login cloudflare-api
+```
+
+如果只是临时不想加载插件，可以这样启动：
+
+```bash
+codex --disable plugins
+```
+
+如果连 Apps 也不想加载：
+
+```bash
+codex --disable apps --disable plugins
+```
+
+如果某些 MCP 只是不想这次启动，可以用：
+
+```bash
+codex -c 'mcp_servers.playwright.enabled=false'
+```
+
+## 坏的 SKILL.md 也会拖体验
+
+有时启动时还会看到：
+
+```text
+Skipped loading 2 skill(s) due to invalid SKILL.md files
+```
+
+这类问题通常不是最大慢点，但会让启动输出变乱，也可能重复刷 warning。
+
+如果你看到具体路径，比如：
+
+```text
+/Users/xxx/.agents/skills/url-design-kit/SKILL.md
+/Users/xxx/code/personal/debug/SKILL.md
+```
+
+就去修这两个文件的 YAML frontmatter。一个合法的 `SKILL.md` 开头通常长这样：
+
+```markdown
+---
+name: xxx
+description: xxx
+---
+```
+
+少了 `---`，或者 YAML 写坏了，Codex 就会跳过它。
+
+## 最实用的长期方案
+
+建议把 Codex 的工具分成两类。
+
+常用工具保留自动启动，低频工具不要默认启动，比如 Cloudflare、Pencil、Playwright、Chrome DevTools。需要的时候再临时开，可以准备两个启动命令。
+
+日常轻量版：
+
+```bash
+codex --dangerously-bypass-approvals-and-sandbox --disable apps --disable plugins \
+  -c 'mcp_servers.playwright.enabled=false' \
+  -c 'mcp_servers.chrome-devtools.enabled=false' \
+  -c 'mcp_servers.pencil.enabled=false'
+```
+
+全功能版：
+
+```bash
+codex --dangerously-bypass-approvals-and-sandbox
+```
+
+这样平时启动很快，需要浏览器、Cloudflare、设计工具时，再用全功能模式。
+
+## 总结
+
+把 Codex ，Claude Code 这种当做你的搭档伙伴，让它干的多了，干的久了也会出点问题，这时候就需要去关心一下它，帮它清理一下不需要的内容，这样它才能继续好好工作，后面我会开发一个 agent-docker skills ，实现AI Agent 自己修复自己
+
+谢谢你的阅读
+
+---
+此文自动发布于：<a href="https://github.com/coderPerseus/blog/issues/114" target="_blank">github issues</a>
