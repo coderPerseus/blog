@@ -1,0 +1,152 @@
+---
+title: DeepSeek接入Codex实测
+date: 2026-08-02T06:39:34Z
+slug: post-119
+author: coderPerseus：https://github.com/coderPerseus
+tags: ["AI"]
+---
+
+昨天 DeepSeek 发布了 deepseek-v4-flash ，大幅提升了 Agent 能力，我自己在 Codex （现在是ChatGPT，后文都叫做 ChatGPT）里面接入实测真的很不错，下面我分享一下我实测的体验和心得，希望对你有所帮助，下面是分享的速览：
+
+- DeepSeek 在 07-31 发了啥？
+- 如何将 Deepseek 接入到 ChatGPT？
+- 在 ChatGPT 里面实测 Deepseek 的各项能力。
+- 哪些场景适合使用Deepseek这个大模型呢？
+- 简单总结一下！
+
+下面让我们快开始吧～
+
+## 07-31 DeepSeek 更新
+
+这次更新主要两方面：
+
+1）发布了 DeepSeek-V4-Flash 正式版，但是仅仅是上线了 API，所以你使用的网页端，客户端都还是旧的模型
+
+2）Agent 能力大幅提升，针对 ChatGPT  完成适配（原生支持 Responses API），官方提供了一键配置方法，配置后就可以在ChatGPT CLI、ChatGPT 桌面端 和 VS Code 的 ChatGPT 插件端进行使用，这里我比较关注的是 DeepSWE 分数，是 54.4 ，相比较之前 7.3 ，可以说是史诗级加强，我们看一下最新的 DeepSWE 榜单，可以看到 DeepSeek 超过了 GLM 5.2 十个百分点，和 Claude sonnet 5 、grok 4.5 是一桌的
+
+![image-20260801203702887](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/typora/image-20260801203702887.png)
+
+可能你觉得它和当前最顶级的 gpt-5.6-sol 、Claude-opus-5 还有很大差距，但是让我们对比一下价格，你就知道 DeepSeek 有多良心了～
+
+| 模型                  | 输入           | 输出           | 缓存命中 | 输出价倍数 | 备注                         |
+| --------------------- | -------------- | -------------- | -------- | ---------- | ---------------------------- |
+| **DeepSeek V4-Flash** | ¥1（$0.14）    | ¥2（$0.28）    | ¥0.02    | ×1         | 高峰时段约翻倍；DeepSWE 54.4 |
+| GPT-5.6 Luna          | $0.20（≈¥1.4） | $1.20（≈¥8.4） | $0.02    | ×4.3       | 7/30 降价后价格              |
+| GLM-5.2（智谱）       | $1.40（≈¥10）  | $4.40（≈¥31）  | $0.28    | ×15.7      | 开源权重                     |
+| Grok 4.5              | $2（≈¥14）     | $6（≈¥42）     | $0.30    | ×21.4      | 长上下文 $4/$12              |
+| Claude Sonnet 5       | $2（≈¥14）     | $10（≈¥70）    | $0.20    | ×35.7      | 推广价至 8/31                |
+| Claude Opus 5         | $5（≈¥35）     | $25（≈¥175）   | $0.50    | ×89.3      | Fast 模式 $10/$50            |
+| GPT-5.6 Sol           | $5（≈¥35）     | $30（≈¥210）   | $0.50    | ×107.1     | Priority 模式 $10/$60        |
+
+> 注：官方 API 列表价，截至 2026-08-01；人民币按 1 USD ≈ ¥7 换算；DeepSeek 为非高峰价。
+
+我们可以通过图更加明显的对比看一下（注意这里的 GPT-5.6 Luna 是最近降价后的价格）
+
+![image-20260801211411843](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/typora/image-20260801211411843.png)
+
+可以看到 DeepSeek 输出成本只有 Claude 的约 1/90。如果说 Claude ，ChatGPT 是 AI 的领头羊，让 AI 变得越来越强大，让有能力的人使用上最智能的服务；那 DeepSeek 就是 AI 的普惠者，它让普通人也能很没有负担的用上前沿的 AI 能力。下面我们看一下 DeepSeek 在真实场景的表现
+
+## DeepSeek 接入 ChatGPT
+
+![image-20260801222936809](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/typora/image-20260801222936809.png)
+
+这部分其实没什么好说的，看官方文档：https://api-docs.deepseek.com/zh-cn/quick_start/agent_integrations/codex/ ，有手就行～，但是有一个前提就是你需要已经安装好了 ChatGPT
+
+## ChatGPT 里实测 DeepSeek 
+
+我自己是已经使用 DeepSeek 在 ChatGPT 做了很多事情，下面我分享 4 个有代表性的工作：
+
+- **agent 开发**：测试模型的编程能力，是否能够基于框架完成需求
+- **bug 的定位和修复**：在真实的场景中定位问题原因并进行合理的修复
+- **浏览器操作能力测试**：测试插件端操作浏览器的能力
+- **辅助学习**：结合 matt 的 `/teach` 辅助学习后训练，测试前端网页审美
+
+
+
+### agent 开发
+
+首先测试的是它的全栈开发能力，看看能不能真的做一个能使用的产品，这次我让它做的是一个找书，并下载到本地的 agent，下面是提示词和结果：
+
+![image-20260801224558416](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/typora/image-20260801224558416.png)
+
+我们可以看到 21 分钟它完成了工作，我自己实测了一下发现确实能够跑通，最后成功下载了 epub 格式的书籍到本地，只不过是英文版本的：
+
+![image-20260801225123535](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/typora/image-20260801225123535.png)
+
+下面是让和它水平差不多的 GPT-5.6 Luna 的实现：
+
+![ddc4f75d3aadad2419b2bfdf7b2b4860](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/typora/ddc4f75d3aadad2419b2bfdf7b2b4860.jpg)
+
+可以看到差不多的时间跑通，但是 DeepSeek 更便宜！
+
+### bug 定位和修复
+
+开发中最常见的场景就是遇到 bug ，找出 bug 原因并修复 bug。这里我是让它帮我修复一个在真实项目里面前后端都有问题的bug， bug 的表现是：
+
+- 后端接口请求超时，由于跨表关联查询；没有利用索引；返回数据冗余太大；sql 查询脚本语句顺序问题 等问题
+- 前端因为错误的状态更新和依赖导致了接口请求了2次问题
+
+这里我让 DeepSeek 进行排查，DeepSeek 找到了80%的问题原因。但是没有发现深层的bug，所以我们可以让 Deepseek 先做一轮修复，然后让 ChatGPT 进行code review 和二次完善
+
+![image-20260802003745248](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/typora/image-20260802003745248.png)
+
+### 浏览器操作 & Computer use
+
+1）先看一下 computer use 的能力
+
+这里我让它帮我评论哔哩哔哩的视频，可以看到是成功了，但是花费了 13分钟，所以还是很鸡肋的，我看了一下花这么多时间背后的原因是因为它先卡在了授权问题，打通通道花费了大量的时间；然后 DeepSeek 模型目前还不支持读图片，只能使用 OCR 工具进行辅助执行；最后由于 哔哩哔哩 做了 RPC 限制，导致发布失败，绕了一下。不过最后的结果是好的，成功的完成了任务。**但是如果你有操作电脑的需求，千万不要使用 DeepSeek 模型，慢而且浪费钱**，操作电脑的需求还是使用 ChatGPT ～
+
+![image-20260801225832123](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/typora/image-20260801225832123.png)
+
+![image-20260801225904442](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/typora/image-20260801225904442.png)
+
+2）浏览器操作能力
+
+如果你有任何浏览器相关的工作，我都推荐你安装 ChatGPT 浏览器插件，安装方法也很简单
+
+![image-20260801231018011](/Users/zozy/Library/Application Support/typora-user-images/image-20260801231018011.png)
+
+安装成功后，你可以看到浏览器插件栏多了一个 ChatGPT 图标，点击右侧会多一个侧边栏，这里是一个Chatbox ，和本地 ChatGPT 是同步聊天状态的（同样也是需要本地App进行配合），你可以在顶部搜索你在 ChatGPT 的聊天记录，在这里的对话也会同步到本地的桌面端 App 
+
+![image-20260801231308748](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/typora/image-20260801231308748.png)
+
+可能很多人还没有使用过 ChatGPT 插件端，这里如果用一句话来说的话：它是让 ChatGPT 能够直接控制和操作你真实的 Chrome 浏览器（有登录态的，这也是为什么本地 App 明明内置了一个浏览器还需要这个插件）。这样你就可以在你真实工作的浏览器让 ChatGPT 帮你干活。
+
+这里我在插件里面让它帮我总结当然网页内容，分析网页实现原理，分析接口请求等工作都能完全胜任，如果你是一个浏览器重度用户，很多工作都在浏览器进行，但还没有使用过插件端，那我建议你现在立马安装使用起来，你会回来感谢我的～
+
+### 辅助学习
+
+Deepseek这次更新其实是后训练的之前的Deepseek模型，所以我也想学习一下后训练到底是干什么的。这里可以看到花了三分钟就帮我们创建好了学习资料
+
+![image-20260802003359057](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/typora/image-20260802003359057.png)
+
+我自己实际学习下来感觉它生成的内容质量还是很高的。可以看到它并没有直接上来就教我后训练是干什么的，而是会先跟我讲一些我需要预先 理解的知识。然后让我了解到了后训练是什么。而且这个页面UI也还挺好看的，我后面又多尝试了几次 DeepSeek ，发现它在真实开发网页的时候审美还是比较差的，目前我建议在 UI审美上使用 Grok 4.5 ，实际测试下来它生成的网页UI还是很不错的
+
+## DeepSeek 适用场景
+
+通过我这几天的使用，我测试的感受和 DeepSWE 的评分是一致的，DeepSeek 在解决日常问题和中等难度问题的时候都是很棒的，最重要的是它的速度真的非常快，用起来非常爽！
+
+如果你是深度 ChatGPT 的使用用户，你应该就知道它最近总是干着干着不干了，卡住了～ 所以我打算后面会把日常工作都交给 DeepSeek ，ChatGPT 负责 review 和兜底；因为DeepSeek的速度实在是快，用起来非常爽
+
+下面是我总结的 DeepSeek 的适用场景：
+
+- 结合浏览器插件进行调研，总结工作
+- 自媒体创作辅助、学习辅助
+- 日常任务
+
+下面是不推荐使用的场景：
+
+- 需要图片理解，图片识别；例如：computer use
+- 和安全冲突的事情，这里因为 Codex 这个 harness 安全方面限制比较严格
+- 复杂问题
+
+## 总结
+
+DeepSeek 虽然 Agent 能力没有什么出众的地方，但是它的价格实在是实在是太便宜了，而且效果还不差，目前最推荐是在 codex 里面进行使用，官方写了非常详细的教程，一行命令接入，想要删除也是随时都可以删掉；
+
+![image-20260802005001266](https://blog-1304565468.cos.ap-shanghai.myqcloud.com/typora/image-20260802005001266.png)
+
+我稳定使用了 2 天，没有遇到报错、软件异常的情况，所以可以放心把 DeepSeek 接入到 Codex 进行日常的工作
+
+---
+此文自动发布于：<a href="https://github.com/coderPerseus/blog/issues/119" target="_blank">github issues</a>
