@@ -1,0 +1,110 @@
+---
+title: 简单三步解决 Codex 切换 provider 会话消失问题
+date: 2026-08-06T16:15:09Z
+slug: post-120
+author: coderPerseus：https://github.com/coderPerseus
+tags: ["AI"]
+---
+
+最近在 Codex 里面接入了 DeepSeek ，有些任务我会让 Codex 官方的服务去做，有些我会让 DeepSeek去做，所以我会切换，在切换的过程中，Codex 有一个机制它会过滤掉不是当前 provider 的对话，所以官方的对话，在我切换到我自定义的 provider 的时候就消失了，看到原本满满的左侧对话列表一下子全没了，我心也是凉了半截，一番搜索发现有一个神器：codex-provider-sync ，目前已经有了 3k star 的项目，用了一下真的非常好用，非常简单，看到我回来的对话列表，表示必须安利一下，给在codex 里面使用 自定义 provider 的同学！
+
+![image-20260806234022026](https://pub-0d530dc48245462d8f3734870a46cd58.r2.dev/image-20260806234022026.png)
+
+## 使用 codex-provider-sync
+
+非常简单，安装 => 运行 
+
+但是在开始之前需要有两个前提：
+
+1）先退出 Codex ：因为 Codex 启动的时候无法操作它的对话数据库数据
+
+2）安装好 nodejs环境：你都有 codex 了，nodejs 环境肯定不会少的吧
+
+**第一步：安装工具**
+
+```bash
+npm install -g git+https://github.com/Dailin521/codex-provider-sync.git
+```
+
+装好后会有命令：
+
+```bash
+codex-provider
+```
+
+**第二步：使用工具**
+
+```bash
+codex-provider sync
+```
+
+成功时大致会看到：
+
+```text
+Synchronized provider: deepseek
+Updated rollout files: 2108
+Updated SQLite rows: 5905
+Backup: ~/.codex/backups_state/provider-sync/时间戳
+```
+
+其实在使用之前你也可以先看看当前状态，但是不是必须的：
+
+```bash
+codex-provider status
+```
+
+你会看到类似信息：    
+
+```text
+Current provider: deepseek
+Rollout files:
+  sessions: openai: 800, deepseek: 12
+SQLite state:
+  sessions: openai: 790, deepseek: 12
+```
+
+
+
+以上是mac 的使用教程，如果是 Windows，官方还提供了 GUI，可以看看官方仓库的 README 写的很清楚
+
+## 把 DeepSeek 注册成 Codex 原生自定义子 Agent
+
+别急，还没完，其实我们也可以不切换，可以让 codex 启动的 subagent 使用 DeepSeek ，这样也不用折腾对话了 使用这个仓库 [oil-oil/codex-deepseek-subagent](https://github.com/oil-oil/codex-deepseek-subagent)  。使用方法如下：
+
+1. 先全局安装 Skill（需要 Node.js）：
+   ```bash
+   npx skills add oil-oil/codex-deepseek-subagent -g -y
+   ```
+
+2. **重启** ChatGPT / Codex 桌面端，然后新建一个任务。
+
+3. 在新任务里直接说：
+   ```
+   帮我把 DeepSeek 配置成 Codex 的原生子 Agent。
+   ```
+
+4. 如果还没配过 API Key，它会向你要 DeepSeek API Key（会通过标准输入安全保存到系统凭据库，不会明文写进文件）。
+
+5. 看到 `status: ready` 后，**再重启一次桌面端**，新建任务。
+
+6. 之后就可以直接用：
+   ```
+   用 DeepSeek 子 Agent 检查这个项目。
+   ```
+   或者让主 Agent 调用：
+   ```text
+   spawn_agent(agent_type="DeepSeek", fork_turns="none")
+   ```
+
+配置成功后，角色文件会在 `~/.codex/agents/DeepSeek.toml`。
+
+这个方案会自动处理兼容性问题（把父模型的 `multi_agent_version` 固定成 `v1`，并关闭 `multi_agent_v2`），因为 DeepSeek 目前不支持 V2 的加密任务投递（`encrypted_content` 会被丢弃）。
+
+
+
+## 总结
+
+让我们简单总结一下，如果你是最近想要在 codex 里面使用 DeepSeek ，我推荐你直接使用 subagent 的方式，如果你是官方的额度没了那么推荐切换 provider 后，然后迁移对话到新的 provider
+
+---
+此文自动发布于：<a href="https://github.com/coderPerseus/blog/issues/120" target="_blank">github issues</a>
