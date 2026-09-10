@@ -1,0 +1,1684 @@
+---
+title: Harness 工程实战手册：从聊天循环到可靠的 Agent 运行系统
+date: 2026-09-10T01:44:31Z
+slug: post-124
+author: coderPerseus：https://github.com/coderPerseus
+tags: []
+---
+
+# Harness 工程实战手册：从聊天循环到可靠的 Agent 运行系统
+
+> **转载与翻译说明**
+>
+> 本文为 Stencil 团队文章《The Harness Playbook》的中文译文，原作者为 **Can Bölük**，原文发表于 **2026 年 9 月 2 日**。文章及原始配图版权归原作者及相关权利人所有。
+>
+> **推荐语：**当 Agent 从一次对话走向长任务、多智能体协作和远程运行，难点便落在状态恢复、工具执行、权限边界与实时界面上。这篇文章结合 omp 的实际教训，讨论运行框架应该如何承担这些复杂性。推荐给正在开发 Agent 产品、SDK 和扩展系统的工程师。
+>
+> **原文地址：**[The Harness Playbook — Stencil](https://stencil.so/blog/harness-playbook)
+>
+> **翻译引擎：**OpenAI GPT-6（Codex）。中文翻译与术语校对由 AI 完成，未标称人工审校。
+>
+> **译文说明：**保留原文结构、代码、技术判断与论证语气；代码及形式化规格保持原样。Harness 在本文中指承载 Agent 状态、执行、控制与交互的运行框架，后文保留英文名称。原文中的演示视频与交互内容以截图及源链接呈现，图中文字保留原貌，图注译为中文。文中的“我们”“我”均指原作者及其团队；功能状态以原文发表时为准。
+
+---
+
+*在开始之前，先说一声谢谢。数十万用户使用过 omp，反馈故障、提出缺失的能力，并共同塑造了它今天的样子。这篇文章以及 omp² 本身，都因你们而存在。*
+
+听说 omp² 后，许多人的第一反应都是：“可为什么要做这个？”
+
+给 fetch 套一层 while 循环，听起来很简单。但 OpenCode、Pi、OpenClaw 和 omp 同时着手全面重构，是有原因的：过去从来没有这一类软件。只有先做出简单版本，我们才能看到裂缝，进而走向更好的设计。
+
+无法避免的复杂性，总要有人承担。目前，[复杂性守恒定律](https://en.wikipedia.org/wiki/Law_of_conservation_of_complexity)的天平倒向了扩展和用户，以至于在 omp 或 Pi 之上构建可靠软件变得不可能。我已经听到有人说：“什么？它扩展起来明明那么简单、那么舒服。”给我几章的篇幅，让我试着改变你的想法。
+
+Dijkstra 写过[“简单是可靠的先决条件”](https://www.cs.virginia.edu/~evans/cs655/readings/ewd498.html)，但他恰恰以用算法解决寻路问题闻名。为什么不直接暴力搜索？他的意思绝不是我们如今反复念叨的“**简单就是好，复杂就是坏**”。这条建议是为了帮助实现者推理。可我们却羞于承认：自己把它拿来当作实现者不必思考的借口。
+
+Ousterhout 在斯坦福的讲义里补上了另一半。他告诉模块作者，要[“拥抱痛苦”](https://web.stanford.edu/~ouster/cgi-bin/cs190-spring16/lecture.php?topic=modularDesign)。接下困难的问题，把它们彻底解决，再让其他人轻松使用成果。把复杂性沉到模块内部，让少数实现者承担，而不是让每一个调用者各自背负一份更小、又略有不同的副本。
+
+---
+
+我相信许多读者还记得：有人发推把 Claude Code 比作游戏引擎，引来了一波梗图。这个比喻听上去有些牵强，但把渲染暂且放在一边，逐项列出 harness 的职责，就会发现两者确实很像。
+
+它维护一个权威世界，记录变更日志，运行不可信动作，把状态复制到多个视图，调度 actor，解释命令，适配不兼容的协议，并渲染实时界面。
+
+是不是很熟悉？游戏引擎似乎已经花了几十年，来承担同样几类复杂性。
+
+接下来的内容，既是一份复盘，也是一份实战手册：
+
+- **omp 带来的教训**：指出我们在真实用户使用的系统中遇到过哪些失败。
+- **omp² 的改变**：说明替代架构——其中一部分已经实现，另一部分仍在推敲。
+
+## 目录
+
+- [01 设计边界](#the-design-envelope)
+- [02 状态](#the-state)
+- [03 运行时](#the-runtime)
+- [04 控制平面](#the-control-plane)
+- [05 推理](#the-inference)
+- [06 工具接口](#the-tool-surface)
+- [07 界面](#the-interface)
+- [08 技术栈](#the-stack)
+- [09 结语](#closing-notes)
+- [附录 A：官方示例中的状态故障](#appendix-a-state-failures-in-the-official-examples)
+- [附录 B：弹性推测槽位](#appendix-b-elastic-speculative-slots)
+
+<a id="the-design-envelope"></a>
+
+## 01 设计边界
+
+> 先确定运行模式；每个子系统都必须经得住所有模式的考验。
+
+在讨论 agent harness 的任何子系统之前，先设想四种截然不同的产品会依赖它：
+
+- **多路工作区**：多个 agent 和 subagent 在同一文件夹内工作的本地环境。
+- **远程驾驶员**：通过手机上的远程客户端，操控云端 agent，或者桌子下面那台机器上的 agent。
+- **旁观者**：通过网页客户端观看 Claude agent 工作。
+- **Factorio（异星工厂）**：使用 SDK、处理不可信输入的自动化软件工厂。
+
+这些不是市场营销中的用户画像，而是架构测试。它们共同改变了若干维度，也正是这些维度让 harness 不再只是一个聊天循环：
+
+| 测试场景 | 本地或远程 | 交互或自主 | 信任边界 | 并发 |
+| --- | --- | --- | --- | --- |
+| 多路工作区 | 本地 | 交互式 | 大体可信 | 多个 agent、一个工作区 |
+| 远程驾驶员 | 远程 | 交互式 | 宿主与客户端分离 | 一个或多个 agent |
+| 旁观者 | 远程视图 | 观察式 | 不可信的展示输入 | 多个观看者 |
+| Factorio | 远程或集群 | 自主运行 | 恶意仓库与工具输入 | 多项作业 |
+
+只适用于第一种场景的设计，往往会偷偷把控制器塞进 TUI，把状态留在闭包里，让扩展在引擎进程内执行，并假定总有人能从一次没有边界的调用中把系统救回来。要在四种场景中都成立，设计就必须划出更好的边界。
+
+接下来的内容围绕五个由此产生的要求展开：
+
+1. **唯一的权威会话。**回退、分叉、恢复、复制和检查，都必须从同一份有日志记录的状态推导出来。
+2. **可信的控制平面。**策略和会话所有权留在宿主侧；沙箱只接收有明确边界的执行请求。
+3. **有界的工作。**工具调用、subagent 和后台作业都是可取消的流，具有集中管理的限制与可观测性。
+4. **显式的兼容性。**模型与提供商的特殊行为应成为结构化知识，而不是散落在调用点里的条件分支。
+5. **视图只是投影。**TUI、网页客户端、远程客户端和 subagent 检查器都渲染同一份状态，不再各自成为新的权威来源。
+
+这些约束把后面的内容串在一起。无论后文提出 DOM、convar、Director、小型 VM 桩程序，还是组件渲染器，都是在解决这五项要求之一，而不是为了炫技而引入一个子系统。
+
+第一项是基础：在决定代码在哪里运行、如何渲染之前，harness 必须先知道，什么才是真实状态。
+
+<a id="the-state"></a>
+
+## 02 状态
+
+> 如果无法从日志推导出权威状态，那么回退、分叉和恢复都是谎言。
+
+<a id="what-must-survive"></a>
+
+### 哪些东西必须保留下来
+
+如果你希望某样东西能够持久保存、回退、承受崩溃并支持分叉，有三个选择：
+
+1. 保留产生它的历史。
+2. 保留你关心的属性变化。
+3. 保留机器本身。
+
+![图 1：三种保存状态的思路](https://pub-0d530dc48245462d8f3734870a46cd58.r2.dev/figure-01.png)
+
+Source 引擎的网络机制采用了第二种方案的一个变体。至于 omp 和 Pi，目前……没有一种贯彻到底。虽然有事件，状态却并不真正来源于这些事件，违背了事件溯源的第一原则：**仅凭事件本身，就必须能够推导出状态。**
+
+<a id="what-omp-taught-us-two-authorities"></a>
+
+### omp 带来的教训：两个权威来源
+
+![图 2：一个权威来源与两个权威来源](https://pub-0d530dc48245462d8f3734870a46cd58.r2.dev/figure-02.png)
+
+*一个权威来源与两个权威来源：Source 中的一切都是实体增量，所以 replay(.dem) == 原始状态。Pi 的日志只覆盖消息树，权威状态却存在于树外——回退、分叉和恢复因此都失去了真实性。*
+
+走到这一步，有可以理解的原因。每份日志都重复保存系统提示词和 `AGENTS.md`，确实浪费；不过，可以通过对模板取哈希、再保存变量来解决。而且，TypeScript 实际上没有运行时类型，这种状态建模方式在它的生态中也不常见。
+
+但结果依然是：系统里存在两个事实来源。
+
+| 对比项 | Source 引擎 | Pi 式 harness |
+| --- | --- | --- |
+| **事实来源** | 只有 `entity list`。服务端模拟，客户端预测。 | 消息树，**再加上**待办状态、重试计数器、subagent 注册表、流式标记，以及持久化看不见的其他状态 |
+| **增量 Δ 的单位** | `{ Δ entity ... }`；每个增量都是实体增量，因此覆盖所有字段 | `message` / `custom` / `custom_message`；没有引擎负责的状态归约，每个扩展自己推导 |
+| **全局变量** | `CCSGameRules` 是一个单例**实体**，不需要特殊处理 | 分成三层，只有一层有效 |
+| **插件状态** | 插件写入实体字段，状态默认就能通过网络同步并重放 | 模块级闭包：`let turnCount = 0`、`new Map()`、`new Set()` |
+| **重放** | 加载 `.dem`，定位到某个 tick，然后重新推导 | 加载 `.jsonl`；叶节点指针移动，其他权威状态却随意重置或保留 |
+
+有意思的是“全局变量”这一行。Source 没有会话全局变量；它们只是某个实体的属性。我们的全局变量却有自己的层级：
+
+![图 3：会话全局变量的三层结构](https://pub-0d530dc48245462d8f3734870a46cd58.r2.dev/figure-03.png)
+
+*会话全局变量分成三层，只有一层有效。*
+
+Source 的正确性，不是靠精心编写协调器或出色的文档换来的。它让不可重放的状态在结构上*无法被表示*。**正确性来自这个约束**，而不是寄希望于每位扩展作者都记得注册两个 hook，再定义一种更新格式。
+
+<a id="the-evidence-correctness-is-optional-in-the-api"></a>
+
+### 证据：在这套 API 中，正确性是可选项
+
+我们检查了 Pi 官方的 78 个扩展示例。其中 60 个无状态；在 17 个有状态的示例里，只有两个是正确的。
+
+> 译注：以上数量按原文保留；“60 个无状态 + 17 个有状态”与总数 78 并不相加一致，原文没有解释这一差额。
+
+| 示例 | 脱离权威来源的状态 | 用户可见的故障 |
+| --- | --- | --- |
+| `git-checkpoint.ts` | 检查点引用由临时 `Map` 持有 | `/fork` 执行前，`agent_settled` 已经清除了检查点 |
+| `plan-mode/index.ts` | 从整个文件而非选定分支恢复计划模式 | 回退后限制仍生效；恢复时可能复活废弃分支的状态 |
+| `status-line.ts` | 回合数保存在闭包中 | 从第 3 回合退回第 1 回合后，计数变成 4；恢复后从零开始 |
+| `dynamic-tools.ts` | 运行中的扩展注册表 | 工具在回退后仍存在，恢复会话后却消失 |
+| `snake.ts` | 恢复时扫描废弃分支 | 废弃分支里的存档重新出现 |
+| `bookmark.ts` | “最后一条”按文件顺序判断 | 废弃分支上隐藏的助手消息被加了书签 |
+| `kimi-deferred-tools.ts` | 没有重新推导已启用工具列表 | 回退到发现 `Calculator` 之前，它仍保持启用 |
+| `auto-commit-on-exit.ts` | shutdown 把进程退出和会话切换混为一谈 | `/new`、`/resume` 或 `/fork` 会提交工作区 |
+| `tic-tac-toe.ts` | 实时写入和恢复读取使用不同条目类型 | 崩溃可能让用户的一步棋消失 |
+
+细节见[附录 A](#appendix-a-state-failures-in-the-official-examples)。关键在于，文档修不好这种遍布各处的 bug。引擎需要为状态提供唯一的存放位置。
+
+![图 4：井字棋中的状态丢失](https://pub-0d530dc48245462d8f3734870a46cd58.r2.dev/figure-04.png)
+
+*在 tic-tac-toe.ts 中落下 X，O 回应之前崩溃，再恢复，X 就不见了。实时写入与恢复读取使用了不同的条目类型。*
+
+[原始视频](https://stencil.so/blog/harness-playbook/bugs/tic-tac-toe.mp4)
+
+<a id="what-omp-changes-one-materialized-session"></a>
+
+### omp² 的改变：把整个会话物化为一体
+
+如果把整个会话物化为**一个 DOM**，会怎样？当然，也可以使用带序列化能力的 ECS 系统，或者你喜欢的其他表示格式。我主要选择 XML，是因为它让状态非常容易组合、检查和调试。
+
+```
+<meta>
+   <todo>…</todo>          <!-- persistent components, journal-derived -->
+   <jobs>…</jobs>
+</meta>
+<body>                     <!-- the live chain, entries as elements -->
+   <user id="e12">…</user>
+   <ai id="e13">…</ai>
+   <Read id="e14" status="ok">
+      <input path="src/main.rs:1-80"/>
+      <result lines="80">…</result>
+   </Read>
+</body>
+<queues>
+   <steering>...</steering>
+   <prompts>...</prompts>
+</queues>
+```
+
+它的事件就是一条属性变更流：
+
+```
+: todo.done
+event: patch@1
+by: e41
+data: {"ops":[["set",412,"status","completed"],["set",415,"status","in_progress"]]}
+```
+
+树是权威来源，日志保存树的增量变化。运行时对象可以缓存它、给它建索引，但不能成为另一个保存真实状态的地方。在日志的任意位置，harness 都能物化整个会话，因此也就能为它生成快照。
+
+<a id="what-one-authority-buys"></a>
+
+### 唯一权威来源带来了什么
+
+当状态与会话记录放在同一棵树上，几个难题就变成了同一种操作。
+
+**回退就是 DOM 差异比较。**比较当前物化结果和目标状态。某个 `<subagent>` 元素消失了？销毁元素，终止它。出现了一个？创建元素，恢复或启动它。增量本身就是完整的生命周期工作清单。
+
+> 新增一个有状态功能，永远不需要给回退、分叉、恢复或复制再增加调用点。
+
+**提示词成为投影。**不再需要把一个长达 100 行的状态对象传给每个模板。系统提示词与其他所有部分读取同一棵树：
+
+```
+- {{ count(select("todo item[status!=completed]")) }} open items
+```
+
+**复制成为订阅。**我们已经有了应用状态和推导机制。远程客户端消费补丁流，而不是追读文件尾部。远程驾驶员与旁观者场景不再需要各自搭建状态管线。
+
+**渲染成为投影。**组件注册表可以从同一份元素状态渲染 `Read`、`Bash`、消息或 subagent。流式参数修改 `<input>`，流式输出修改 `<result>`。第七章会把这发展成带类型的界面，而不是另一个专用渲染器。
+
+<a id="controller-and-actor"></a>
+
+### 控制器与 actor
+
+这种分离也让 subagent 可以被检查。Pi 的视图直接读取实时会话状态——页脚会调用 `sessionManager.getEntries()`——所以增加“检查 subagent”功能，就意味着要把控制器状态一路穿过 UI 内部。
+
+应当让控制器与 actor 完全分离：控制器拥有会话状态；actor 只渲染它的快照和补丁流。TUI、远程客户端和 subagent 检查器于是处于同等地位。检查一个子 agent，只需把同一个 actor 指向子 agent 的状态。
+
+真实的状态模型是基础。但如果不可信代码掌握了修改状态的策略，它仍可能被破坏。下一章来划定运行时边界。
+
+<a id="the-runtime"></a>
+
+## 03 运行时
+
+> 把策略留在可信宿主上；沙箱内只放一个带宽受限的执行桩程序。
+
+状态一章确立了 harness 认可什么。运行时一章决定谁可以改变它、不可信工作在哪里运行，以及当执行可能持续数小时、不断流式输出，或者无视礼貌的停止请求时，“工具调用”究竟意味着什么。
+
+<a id="the-sandbox-should-execute-not-decide"></a>
+
+### 沙箱应该执行，而不是决策
+
+从设计边界中的 *Factorio* 场景说起。假设我们克隆 roboomp，让 gpt spark 把所有名字都替换成 CodeWhatever，然后开始为这套神奇技术向人收取数千元。工具由谁运行？当然是 VM 啊。嗯，真是这样吗？
+
+把执行器放进 VM，会出现下面的情况：
+
+![图 5：把执行器放进 VM](https://pub-0d530dc48245462d8f3734870a46cd58.r2.dev/figure-05.png)
+
+嗯，这样行不通。因为：
+
+- 程序化使用工具需要访问所有工具，所以不能随意拆开管理 harness 状态的工具和管理环境状态的工具。
+- 我们得建一个双向网关，让 VM 调用宿主工具。这样一来：
+  1. 要么给 DoS 开门，要么得对自家 VM 的某些动作做限流，违背了初衷。
+  2. 事情又变得更复杂了。还是算了吧。
+
+好，那把驱动应用也放进 VM！
+
+![图 6：把驱动应用也放进 VM](https://pub-0d530dc48245462d8f3734870a46cd58.r2.dev/figure-06.png)
+
+- 这下应用提示词和内部源码也泄露了。除非把应用移回 VM 外，通过网络 RPC 连接 harness，并把会话存储也移出去。
+- 但会话存储在外面，又意味着必须给 VM 写入权限，于是前面两个问题一起回来了。
+
+解决办法是：VM 里只放一个听话的小桩程序，并极其小心地限制它回传的数据总量——你不会希望一次误用的 Read 工具回传 2 GB 内容：
+
+![图 7：宿主与执行桩程序之间的边界](https://pub-0d530dc48245462d8f3734870a46cd58.r2.dev/figure-07.png)
+
+这些图最终指向同一条边界：
+
+- **宿主**拥有会话状态、推理、策略、工具路由、审批、限制和日志记录。
+- **沙箱**通过一个小而听话的协议，负责环境内的执行。
+- 每条回传流都必须先受到约束，避免不可信一侧耗尽宿主内存或上下文。
+
+这一安排满足了 Factorio，也没有让本地使用变差。同一宿主可以让桩程序连接本地进程、容器、VM，或者远程机器。
+
+<a id="subagents-cross-the-same-boundary"></a>
+
+### subagent 也要跨越同样的边界
+
+部署位置不只是宿主与 VM 的区别。在文件系统层面，subagent 也需要同样的边界：worktree 只隔离受版本控制的文件；`pi-iso` 则通过 APFS、btrfs、ZFS、overlayfs、ProjFS，或回退到复制的方式，为每个子 agent 提供整个工作区的写时复制视图。子 agent 在自己的视图上产生分歧，父 agent 接收差异。
+
+子 agent 获得视图、返回变更，不与父 agent 共享可变的权威状态。这就是同一条宿主／沙箱规则在文件系统层面的体现。
+
+<a id="what-omp-taught-us-one-call-three-disconnected-apis"></a>
+
+### omp 带来的教训：一次调用，三套彼此割裂的 API
+
+但工具到底怎么定义？我们最初做了哪些改动，后文再讲；核心契约基本保持了原样：
+
+```
+export const myCustomTool: ToolDefinition = {
+	name: "my_tool",
+	parameters: mySchema,
+
+	// 1. Called during argument streaming & before execute()
+	renderCall(args, theme, context) {
+		if (context.argsComplete) {
+			// Trigger async preview computation
+		}
+		return new Text("Pre-execution preview UI...", 0, 0);
+	},
+
+	// 2. Main execution
+	async execute(_id, params) {
+		/* ... -> string */
+	},
+
+	// 3. Called after execute() settles
+	renderResult(result, options, theme, context) {
+		return new Text("Final execution result UI", 0, 0);
+	},
+};
+```
+
+这个契约看起来小巧宜人，却把一次操作拆成了三个互不相关的阶段。预览、执行、给模型的结果、给人的结果、诊断、流式更新、取消和日志记录，描述的明明都是同一次调用。API 却让它们假装彼此无关。
+
+<a id="the-callback-split-duplicates-work"></a>
+
+### 拆散回调，带来重复工作
+
+首先，拆开渲染路径，让响应式更新成了需要主动选择的能力。即使工具的渲染结果没有突然“跳变”成另一种形态，作者也得重复大量展示逻辑。
+
+更大的问题在于 `execute` 的工作方式。以 Edit 为例：
+
+- `renderCall` 打开文件，希望能把读到的部分缓存到某处——到底哪儿？——然后应用编辑、渲染差异。
+- `execute` 再打开一次文件，应用全部修改、写回文件，再以适合模型的格式返回差异。
+- `renderResult` 拿到差异后，还得解析我们随意选定的格式！为什么？因为人想看到带颜色、带高亮的版本，最好还有漂亮的行号。
+
+这种直觉式实现带来了：
+
+- I/O 浪费：文件打开两次。
+- CPU 浪费：编辑应用过程不是计算一次、两次，而是每变化一个字符就全部重算——`renderCall` 可不是协程！
+- 围绕任意格式进行不必要的序列化／反序列化：为了实现 `renderResult`，必须解析给模型的输出；或者把数据塞进 details，重复记录到日志中。
+
+要提高效率，就得在这个定义之外自行驱动一个协程，找地方保存它的句柄，而且结果反序列化那一套仍然省不掉。
+
+问题不只是代码重复。契约里缺少一个权威对象，让状态从“参数流入中”经过“运行中”再到“已结束”。每个实现都得为这个生命周期另造一条旁路。
+
+<a id="what-omp-changes-execution-is-a-state-stream"></a>
+
+### omp² 的改变：执行就是状态流
+
+> 工具执行是一条有界、可取消的状态流，而不是一个返回文本的异步函数。
+
+添加结构化警告、诊断或截断提示，同样没有通用方法。大多数 Pi 工具实现最后都会写出类似这样的代码：
+
+```
+text += `\n${theme.fg("warning", `[Truncated: ${truncation.outputLines} lines shown (${formatSize(truncation.maxBytes ?? DEFAULT_MAX_BYTES)} limit)]`)}`;
+```
+
+模型只能猜测工具数据在哪里结束、harness 的说明又从哪里开始。由于 `execute` 不是生成器，流式输出还需要在更新通道上再搭一套协议。
+
+DOM 模型消除了这两种特例：
+
+- 流式输出修改 `<result>` 的内容。
+- 添加警告就创建一个 `<diag severity="warn">`。
+
+执行期间，客户端接收这个状态的补丁；执行结束后，相对前一状态的最终差异被写入日志。
+
+在统一会话模型中，一次调用就是一个带结构化子节点的元素：
+
+```
+<Edit id="e41" status="running" version="3">
+   <input i="Update the parser without changing the public API">…</input>
+   <result>…streaming structured state…</result>
+   <diag severity="warn">…</diag>
+   <usage tokens="0" elapsed-ms="842"/>
+</Edit>
+```
+
+执行器在运行过程中修改这个元素。模型、用户、日志、远程客户端与测试框架观察的是同一状态的不同投影。执行结束时冻结最终差异；客户端再也不必解析结果字符串，去恢复那个序列化之前原本就存在的、更丰富的对象。
+
+<a id="limits-are-part-of-the-primitive"></a>
+
+### 限制是原语的一部分
+
+Pi 工具没有限制：返回 1 MB 文本，就会原封不动地交给模型。把如此底层的原语直接暴露出去，并不合适。
+
+<a id="bound-output-once"></a>
+
+#### 在统一位置限制输出
+
+Pi 自己也在 `Bash` 和 `Read` 上遇到了这个问题，于是导出一个截断工具函数，供各实现共用。omp 在此基础上增加了产物系统，让模型能够读回保留下来的完整输出，却仍像 Pi 一样，把责任留给每个实现。
+
+向模型发送 1 MB 内容也许值得保留，但应该默认截断、允许通过显式 `notrunc` 属性退出这一限制，并由一处集中实现，而不是把截断当成需要主动选择的良好设计。把辅助函数设为可选，会从两个方向出问题。
+
+多数工具都需要某种截断，因此可选的辅助函数必然导致覆盖不均：
+
+- 不知道它存在的作者会自己写，每个人的提示又稍有不同。
+- 从未想过会出现巨大结果的作者，则什么也不写。
+
+在工具实现内部截断，而不是在对话渲染层截断，还会破坏 Code 模式：
+
+- agent 无法直接依赖 `Eval` 内部的工具输出，每次使用前都得先从数据里剥离 harness 提示。
+- `Eval` 的结果本身也可能被截断，于是一次调用就在同一份数据外叠上 N+1 层相互独立的截断。
+
+<a id="bound-blocking-time-once"></a>
+
+#### 在统一位置限制阻塞时间
+
+让*任何工作*转入后台，以及限制一次调用最多阻塞多久，也都属于库层职责，不该由每个偶尔跑得久的工具各自处理。
+
+第一个原因是缓存和用户体验。否则，一次意外耗时的调用会让 agent 无法察觉和调整；用户回来看到卡住的会话；自主作业永远等待；调用尚未返回，提供商的 KV 缓存就已过期。
+
+第二个原因是重复建设，omp 也犯过同样的错。每个工具一旦有自己的后台执行机制，就会附带自己的 spawn、poll、message、kill 和 list 辅助工具。看看 Claude 围绕它自己的 `Task` 和 `Bash` 工具画的这张图：
+
+![图 8：Task 与 Bash 最终汇合到相同的作业接口](https://pub-0d530dc48245462d8f3734870a46cd58.r2.dev/figure-08.png)
+
+两者最终都收敛成进程接口：`signal` + `stream in` + `stream out`。后台 shell、subagent、开发服务器守护进程、远程函数，以及超出时间预算的普通调用，本质上是同一种对象：拥有 stdin、stdout、退出状态和信号句柄的作业。应该用一个 stdio 形态的作业原语封装它们。
+
+这样，阻塞预算在一处执行，溢出的输出落到统一的产物路径；检查、发消息或终止任何作业，都使用同一套接口，不再每个工具复制一份。
+
+可观测性的期待也一样。想看 subagent 状态的用户，同样想看后台 shell。跨 harness 实例向同伴发消息的 agent，也希望看见同伴运行的守护进程，这样同一目录中的 N 个 agent 就能共享一个支持 HMR 的 `bun dev`，而不是在 N 个端口上启动 N 份。
+
+<a id="cancellation-requires-a-kill-boundary"></a>
+
+### 取消需要一个能够强制终止的边界
+
+让扩展——因此也包括自定义工具——与引擎共享 JavaScript isolate，会带来灾难。正确的热重载几乎无法实现；工具调用一旦脱离协作式取消，就无法被强制停止。
+
+JavaScript 和 Go 分别通过 `AbortSignal` 和 `context.Context` 提供取消能力。这些协议很有用，却没有强制执行力。忘记传递信号、调用不接受信号的依赖、执行同步工作，或者进入无限重试循环，都会让超时只起到“告诉 agent 可以继续”的作用；工作本身可能还在后台消耗资源。
+
+因此，安全的宿主需要一种它确实能够终止的执行单元：进程、worker、子解释器、VM 请求，或等价的边界。这一单元被杀掉时，不能连会话的权威状态一起带走。取消属于运行时契约，不能依赖每位工具作者自觉配合。
+
+<a id="make-the-mandatory-boundary-pleasant"></a>
+
+### 让必须存在的边界用起来舒服
+
+刻意保持简单的沙箱桩程序，还带来最后一个 SDK 问题：扩展作者现在面对两套文件系统。一个自定义编辑函数，可能不得不从一侧读取文件、完整传输，再写回另一侧。
+
+这就是 omp² 选择 Python 编写扩展的原因。Python 可以通过标准库检查自身 AST，打包某个函数所需的源码，再提交给另一个运行时；一个 `@remote` 属性，就能把看起来像本地调用的函数变成 RPC。Modal Python SDK 等系统中的远程函数之所以自然，也是利用了同样的性质。
+
+自带 Python 运行时，也让 `Eval` 变得可靠，不必碰运气看机器恰好装了哪种解释器。一举两得。
+
+有了可信的工作所有者，以及可取消的执行原语，harness 仍然需要一套连贯的方式来控制配置值和跨回合行为。这就是控制平面。
+
+
+<a id="the-control-plane"></a>
+
+## 04 控制平面
+
+运行时掌管两种不同的控制。**值**回答当前启用了哪个模型、服务等级、主题或策略；**行为**回答 agent 是否可以交还控制权、是否必须再运行一回合，或是否临时需要某项能力。当每个调用者都拥有私有 setter 或标志位时，两者都会变得支离破碎。
+
+<a id="values-declare-policy-with-the-setting"></a>
+
+### 值：与配置项一起声明策略
+
+> 作用域、持久化、继承与复制，都应写在配置项的声明中，而不是散落在 setter 的调用点。
+
+配置系统也成了雷区：脏状态追踪，以及全局、会话级、临时等多层配置混在一起。与 Pi 一样，大多数 get/set 操作都经过 `AgentSession` 类型，因为变更必须持久化到 JSONL。
+
+你知道哪套配置系统多年前就解决了所有这些问题吗？没错，Source 引擎！
+
+尤其值得一提的是，大多数玩过 Valve 游戏的人，张口就能说出 `sv_cheats` 是做什么的。人们定制配置这么多年，我都想不起哪个用户因此不满。换作其他软件的配置，你还能记住什么？
+
+[convar](https://developer.valvesoftware.com/wiki/ConVar) 是一个有类型的变量，包含名字、默认值、帮助文本，以及一组用位字段表示的**标志**，只需在定义处声明一次：
+
+```
+ConVar sv_gravity("sv_gravity", "800", FCVAR_REPLICATED | FCVAR_NOTIFY, "World gravity.");
+```
+
+持久化、所有权、作用域、复制，甚至重放的真实性，都是**变量自身的属性**，在变量诞生的地方写清楚。不必把 `set` 绕过一个上帝对象，也不必自己实现脏状态追踪。
+
+![图 9：convar 的权威存储与客户端镜像](https://pub-0d530dc48245462d8f3734870a46cd58.r2.dev/figure-09.png)
+
+*服务端只有一份权威存储，并镜像到每个客户端。REPLICATED 向下推送值，USERINFO 向上发送客户端拥有的变量，CHEAT 用 sv_cheats 限制变量，ARCHIVE 决定哪些内容写入 config.cfg；每次变化都会记录到 .dem。*
+
+convar 并不是会话 DOM 旁边的第二套配置数据库。会话作用域内的 convar，只是权威树中另一个有日志记录的节点；它的标志声明了它如何参与恢复、回退、派生、复制和归档。
+
+<a id="inheritance-should-not-require-a-second-setting"></a>
+
+### 继承不应该再需要一个配置项
+
+如今在 omp 中，服务等级，也就是 `/fast`，还有一个专门给 subagent 用的配置项。
+
+```
+tier:
+  openai: priority
+  subagent: inherit   # separate setting
+```
+
+在 convar 的世界里，`ai_fastmode` 只是*一个*带 `SESSION` 标志的变量：随会话记入日志，因此恢复会话时也会恢复它。继承根本不需要标志：新派生的子 agent 默认以父 agent 的实时值初始化*每个*变量，不需要主动开启。
+
+希望把子 agent 的值固定下来？一行就够：
+
+```
+# subagent.cfg — auto-exec'd for every spawn
+ai_fastmode 0
+
+# sonic.cfg — auto-exec'd when a sonic spawns, class config
+ai_model @smol
+ai_thinking low
+```
+
+主会话使用 `config.cfg`，任意数量的用户 cfg 可以作为配置方案；每次派生自动执行 `subagent.cfg`，再叠加 `<agent>.cfg`。拥有上千属性的上帝对象也一并解决了。TF2 早就知道该怎么做！
+
+现在，一个值就能描述主会话及其子会话。继承规则留在值的定义处，不会再变成不断膨胀的会话上帝对象上的另一个属性。
+
+<a id="profiles-and-keybindings-stay-in-band"></a>
+
+### 配置方案和快捷键沿用同一套机制
+
+有了 cfg，按键绑定就更顺理成章。`bind`、`toggle` 和 `alias` 也是控制台命令，那些我们不停发明 schema 来描述的输入模式，都能留在同一套机制内。用户想用快捷键隐藏思考过程？
+
+```
+bind ctrl+t "cl_showthinking 0"        # careful — one-way; the second press still writes 0
+bind ctrl+t "toggle cl_showthinking"   # there we go; toggle also cycles value lists
+
+alias +thinkhud "cl_showthinking 1"         # fires on key-down...
+alias -thinkhud "cl_showthinking 0"         # ...and on key-up
+bind ctrl+h +thinkhud                       # hold to peek at the thinking stream
+```
+
+我们的快捷键层就该这样，而不是再造一套专用 schema，配上一张自己的默认值表！
+
+命令流把一切串了起来：cfg 文件、控制台输入、别名、按键绑定、远程管理和日志重放，都围绕同一组声明过的变量说同一种语言。定制功能不再催生一套又一套一次性 schema。
+
+<a id="behaviors-the-loop-shaped-hole"></a>
+
+### 行为：那个“循环形状”的缺口
+
+> 任何能跨回合持续掌控流程的行为，都应归入同一个可组合、由 agent 拥有的 Director 原语。
+
+另一个值得关心的话题是可扩展性。我其实认为 Pi 有很棒的扩展层，但其中确实有一个“循环形状”的缺口。
+
+我安装了 Pi 中最流行的 Plan 和 Goal 实现。试着同时启用两者，就会看到：
+
+![图 10：另一个工作流已激活，无法启动计划模式](https://pub-0d530dc48245462d8f3734870a46cd58.r2.dev/figure-10.png)
+
+好吧！这很有意思，但 Pi 并没有“workflow”API。它们是怎么做到的？实现者自己定义了一套：
+
+```
+export const WORKFLOW_MUTEX_CHANNEL = "workflow:mutex:v1";
+export const AGENT_WORKFLOW_GROUP = "agent-workflow";
+
+export class WorkflowMutex {
+  private session: object | undefined;
+  private readonly heldGroups = new Map<string, WorkflowMutexOwner>();
+  private generation = 0;
+  private readonly pi: Pick<ExtensionAPI, "events">;
+
+  constructor(pi: Pick<ExtensionAPI, "events">) {
+    this.pi = pi;
+    pi.events.on(WORKFLOW_MUTEX_CHANNEL, (payload) => {
+      this.answer(payload);
+    });
+  }
+```
+
+原来如此！两个实现出自同一位作者。他遇到了这个问题，于是构建了一个能在自己这套插件之间工作的解决办法。
+
+引入系统来封装这种行为的复杂性，被下放给了插件作者；而他们只能造出在自家扩展之间有效的系统。
+
+omp 也有类似的问题：
+
+```
+// modes/interactive-mode.ts — the exclusivity "system", in its entirety
+if (this.goalModeEnabled || this.goalModePaused) { this.showWarning("Exit goal mode first."); return; }
+if (this.vibeModeEnabled)                        { this.showWarning("Exit vibe mode first."); return; }
+// …restated by hand at six other entry points
+```
+
+只要独立编写的行为碰到一起，缺失的抽象就会显现。私有互斥锁能防止同一作者的 Plan 和 Goal 插件冲突，却无法让任意扩展组合起来。omp 手写的模式检查也有相同局限。
+
+由此产生两个决定：给掌管循环的原语命名为 **Director**，并把更多内置行为移到公开扩展接口上，让这个接口的缺口再也无法被忽视。
+
+<a id="directors-own-candidate-yields"></a>
+
+### Director 掌管交还控制权的候选请求
+
+agent 有一个循环，越来越多的东西想指挥这个循环：plan 希望在计划出现前继续下一回合；goal 希望在目标完成前继续；`/force` 想修改下一次推理；todo 提醒器则希望在交还控制权前，获得最后一次提出异议的机会。
+
+那就在 **agent 层**提供一个拥有这项决定权的对象：Director 栈。
+
+这里的“栈”是会话 DOM 中的一棵实时子树，不是一个承诺稍后序列化的 Python 数组。DOM 是权威来源，运行时只负责遍历。
+
+```
+candidate yield flows this way ────────────────────────────────┐
+                                                               ▼
+Base  →  TodoReminder  →  Goal  →  Plan  →  ForceTool(write)
+                                                parent    child/top
+```
+
+循环依然非常朴素：
+
+```
+while True:
+    request = directors.prepare_inference(base_request)  # outside → inside
+    turn = await inference(request)
+    await execute_tools(turn)
+
+    if turn.has_tool_calls:
+        continue
+
+    decision = await directors.on_yield(turn)            # inside → outside
+    match decision:
+        case Continue(): continue
+        case Yield():    return
+```
+
+`prepare_inference` 从外向内遍历栈，让最内层行为进一步调整父层即将发出的请求；`on_yield` 则反向向外遍历。每个 Director 可以：
+
+- **Pass**：让下一个 Director 检查这次候选交还。
+- **Continue**：消费这次交还请求，再运行一回合。
+- **Yield**：消费请求，真正把控制权交还用户。
+- **Push**：在自己上方压入一个子 Director。
+- **Done**：将自己弹出，再把同一次候选交还交给父层。
+- **Fail**：携带错误退出栈。
+
+因此，回退会移除 Director，恢复会重新建立它们，远程检查器也能看见当前由哪个行为掌管候选交还。
+
+<a id="plan-mode-completely"></a>
+
+### 把计划模式完整实现出来
+
+假设计划模式已启用，但模型尚未写入计划文件就想交还控制权。Plan 会先于任何外层行为看到这次候选交还：
+
+```
+class Plan(Director):
+    async def on_yield(self, agent, turn):
+        if not turn.wrote(self.plan_file):
+            return agent.force_tool(
+                "write",
+                until=lambda turn: turn.wrote(self.plan_file),
+                reminder="Write the plan file before yielding.",
+                retries=3,
+            )
+
+        if not turn.called("ask") and not turn.proposed_plan():
+            return agent.force_tool(
+                "required",
+                until=lambda turn: turn.called("ask") or turn.proposed_plan(),
+                reminder="Propose the plan, or ask the user what is missing.",
+                retries=3,
+            )
+
+        return Yield()
+```
+
+软模式下的 `force_tool("write")` 会压入一个小型内置 Director，把这项能力要求加入下一次推理请求：
+
+```
+class ForceTool(Director):
+    def prepare_inference(self, request):
+        return request.with_tool_choice(self.tool)
+
+    async def on_yield(self, agent, turn):
+        if self.until(turn):
+            return Done()                    # pop; offer the yield back to Plan
+        if self.retries_left:
+            return Continue(self.reminder)
+        return Fail("tool requirement exhausted")
+```
+
+Plan 的下方，栈里已经有另一个 Director：
+
+```
+Base → TodoReminder → Plan
+```
+
+候选交还先到达 Plan。只要 Plan 仍在工作，它就会继续、压入子层，或直接交还用户。它不会返回 `Pass`，因此外层的 TodoReminder 永远看不到这次交还。
+
+扩展使用完全相同的接口：
+
+```
+await agent.direct(VerifyBeforeYield(...))
+```
+
+```
+<directors>
+  <todo-reminder id="d1">
+    <plan id="d2" plan-file="local://auth-plan.md">
+      <force-tool id="d3" tool="write" attempts="1" max-attempts="3"/>
+    </plan>
+  </todo-reminder>
+</directors>
+```
+
+这是完整的组合机制，而不是又一种特殊模式。Plan 掌管交还，临时压入 ForceTool；子层完成后，同一次候选交还返回给 Plan，再由它决定继续执行还是交还用户。
+
+<a id="hooks-directors-and-inference"></a>
+
+### Hook、Director 与推理
+
+- **hook** 观察或编辑一次推理或一个回合。
+- **Director** 可以跨回合持续掌控流程，并拦截控制权交还。
+- Director 能以有意义的方式堆叠、嵌套、完成，并恢复父层。
+
+这已经足以让 plan、goal、vibe、autoresearch、提醒器和外部验证行为共用同一个 agent 层原语，不必让它们逐一理解彼此的私有标志。
+
+`ForceTool` 表达的是语义要求：“下一个成功回合必须调用 `write`。”它不知道选定提供商有没有原生 `tool_choice`，不知道强制调用是否破坏缓存，也不知道本地模型是否需要额外提示。这些转换属于推理层。
+
+控制平面现在能表达“应该发生什么”了。下一章让这个要求在互不兼容的模型和提供商之间具有同样的含义。
+
+<a id="the-inference"></a>
+
+## 05 推理
+
+> 模型兼容性应是带有明确优先级的结构化知识，而不是散落在代码里的提供商名称分支。
+
+控制平面提出语义要求：让这个模型流式输出、强制使用那项能力、约束这个结构、统计这些 token。推理层必须把这些请求翻译成“这个具体模型，在这个具体宿主上，通过这套具体 API，实际上能做什么”。
+
+<a id="what-omp-taught-us-quirks-become-architecture"></a>
+
+### omp 带来的教训：特殊行为逐渐长成了架构
+
+这点很容易说明，因为 omp v1 已经有一个可以对照前后的提交。
+
+在 `dd57045396` 之前，OpenAI 兼容逻辑集中在一个 880 行文件里，围绕一个庞大的构建器展开。打开文件，迎面就是：
+
+```
+const isCerebras = modelMatchesHost(hostModel, "cerebras");
+const isZai = modelMatchesHost(hostModel, "zai");
+const isKimiModel = isKimiModelId(spec.id);
+const isMoonshotKimi = isKimiModel && isMoonshotNative;
+const isAnthropicModel =
+    modelMatchesHost(hostModel, "anthropic") ||
+    isClaudeModelId(spec.id) ||
+    isAnthropicNamespacedModelId(spec.id);
+// …then DeepSeek, Qwen, MiMo, Grok, Mistral, OpenCode, local servers
+```
+
+这些布尔值又流入其他布尔值、几层嵌套三元表达式，最终形成一个巨大的 `compat` 对象。Kimi 在思考时允许强制调用工具吗？取决于哪款 Kimi、哪个宿主、哪套 API。这个回环地址意味着 llama.cpp，还是 LiteLLM 在代理别的东西？最好再加个特例。
+
+任何一个分支单独看都没有问题！每个分支都修复了真实的提供商 bug。问题是，同一份知识最终被编码进了多个地方：
+
+- `compat/openai.ts`：880 行。
+- `model-thinking.ts`：977 行。
+- `variant-collapse.ts`：1,776 行。
+- 单独的 Bedrock、Anthropic 和 Devin 兼容性构建器。
+- 发现逻辑与提供商序列化器里更多的名称检测。
+
+后来用什么替代了它们？
+
+```
+taxonomy/   "what model is this string?"
+classes/    "what is true of this model lineage?"
+providers/  "what does this host change?"
+```
+
+于是，Anthropic 的思考能力现在这样描述：
+
+```
+class "anthropic" {
+    on "anthropic" "amazon-bedrock" "google-vertex" {
+        family "sonnet" {
+            revision ">=3.7 <4.6" { thinking-mode "budget" }
+        }
+        revision ">=4.7" {
+            thinking-mode "anthropic-adaptive"
+        }
+    }
+}
+```
+
+这才是我们真正想表达的知识！Sonnet 4.6 之前的版本使用预算式思考；Anthropic 4.7 及以后使用自适应思考；只有在验证过的宿主上，才宣称这些规则成立。
+
+KDL 本身并没有魔法。真正避免我们用一种更漂亮的格式重造混乱的，是编译器：
+
+- 未知指令或未知值？报错。
+- 两条同等具体的规则设置同一项？报错，不能偷偷让文件顺序决定胜负。
+- 没有匹配规则？结果是未知，而不是“false”。
+
+这让提供商不那么古怪了吗？当然没有。我们仍有 `requires-mistral-tool-ids`、`qwen-preserve-thinking`、`strip-deepseek-special-tokens` 这样的兼容性维度，还有十种表示“关闭推理”的写法。看看这些名字，哭吧。
+
+它真正省掉的，是为了表达下一个怪癖，再往四个函数里各加一个分支。现在只需在拥有该事实的位置写一条规则；优先级含糊时，编译器会大声提醒。推理层终于能回答：*这个具体模型在这个具体宿主上，到底支持什么？*
+
+收益不在于怪癖减少，而在于每项事实只有一个所有者、优先级明确，并且在库尚未确定答案时保留 `unknown` 状态。harness 的其他部分不用再靠提供商名称分支重新猜测模型身份。
+
+<a id="a-provider-is-more-than-stream"></a>
+
+### 提供商不只有 `stream`
+
+当我为 Pi 实现网页搜索插件时，这件事几乎注定会立刻反噬我。实际上，同样的压力也冲击了这个仓库最初的极简设计，看看 Pi 新的[图像模型实现](https://github.com/earendil-works/pi/blob/main/packages/ai/src/image-models.ts)就知道了。
+
+Pi 对提供商的建模基本就只有 `stream` 和 `streamSimple`！快速接入一个提供商时很好用，但要在其上不断增加能力就不够了，因为：
+
+- Anthropic 的 token 计数接口怎么办？
+- Codex 的 WebRTC 语音端点和远程压缩呢？
+- Anthropic／OpenAI 的网页搜索呢？
+- embedding 呢？
+- 图像／视频生成呢？
+- 分词呢？
+- 用量查询呢？
+- 模型发现呢？
+
+你觉得每个提供其中一项能力的扩展，都正确实现了同步协调的 OAuth 刷新与重试吗？
+
+除此之外，能使用推理提供商最新的控制能力也很有价值，例如：
+
+- 约束采样。
+- OpenAI 的文本详略选项。
+- Google 的上下文过滤选项。
+- 强制工具调用。
+- Developer 角色。
+- 会话中途的系统提示词。
+- ……
+
+认证刷新、重试、token 计数、搜索、生成、发现，以及提供商原生控制，都是共享基础设施。把它们留给扩展，只会得到同一协议的多个残缺实现。
+
+<a id="capability-policy-forced-tool-calls"></a>
+
+### 能力策略：强制工具调用
+
+强制工具调用说明了为什么“支持一个标志”远远不够：
+
+- **不支持的提供商直接报错**：harness 原生功能若使用它，就会排除大量模型。
+- **悄悄丢弃它**：调用者意外得到尽力而为的行为，只能自己发明强制执行循环。
+- **盲目透传**：提供商的副作用会变成产品 bug。例如，Anthropic 可能让强制调用导致整段对话缓存未命中。
+- **干脆不暴露它**：懂行的调用者绕过库打补丁，又把上面三种失败重做一遍。
+
+理想的 harness 实现应该：
+
+1. **始终注入软提示**，告诉模型下一回合必须调用该工具。这值得无条件执行：OpenAI 等托管 API 会悄悄替你前置这类提醒，但开源推理引擎不会。因此，vLLM 后面的模型会面对一个自己从未被告知的硬约束，开启推理后就容易无所适从。软提示可以补齐这个差异。
+2. **原生标志没有额外代价时才设置。**提供商支持强制工具调用且无副作用，就透传；有惩罚，就先跳过原生标志，只依靠软提示。
+3. **不遵守要求时升级措施。**模型没调用工具，就有限次重试；作为最后手段，即便有代价，也设置原生标志。说服失败后，正确性优先于缓存。
+
+![图 11：强制工具调用的逐级升级策略](https://pub-0d530dc48245462d8f3734870a46cd58.r2.dev/figure-11.png)
+
+*强制调用从软提示开始；只有提供商无副作用地支持时才启用原生标志。模型仍不调用工具时，通过有界重试升级到即使有代价也设置标志，最终再向调用者报告失败。*
+
+这就是上一章 Director 在提供商一侧的实现。`ForceTool` 声明不变量；推理层选择代价最低、同时真正满足要求的方式，并在模型不服从时升级。
+
+<a id="tool-schemas-are-model-facing-protocols"></a>
+
+### 工具 schema 是面向模型的协议
+
+工具的 `parameters` 字段严格定义参数结构。对人使用的 API 来说很理想，但模型不是通用 API 客户端。它们的错误常常与工具名称，以及训练中见过的 harness 绑定。
+
+经过强化学习重度优化的 agent，可能拿另一套 harness 的 schema 调用一个熟悉工具。Composer 模型有时会用它预期的结构输出 `Grep`，即便根本没有 `Grep` 工具。Codex 看到 `paths: string[]`，却可能看当天心情，发来一个用 `;` 或 `,` 分隔的字符串。
+
+因此，库既应该验证，**也**应该纠正。对工具的语义契约严格，对模型的方言宽容：映射没有歧义时，把 `paths: "a,b"` 修复为列表；否则返回结构化、可重试的错误。一个原始 JSON Schema 验证器无法独自承担这一层。
+
+<a id="strict-sampling-needs-budgets-and-dialects"></a>
+
+### 严格采样需要预算与方言管理
+
+约束采样是我们最早加到 Pi 中的功能之一：
+
+```
++   strict?: boolean;
++   customFormat?: { syntax: "lark" | "regex"; definition: string };
++   customWireName?: string;
+```
+
+几个月后，Pi 也加入了 LARK 和 strict 支持，但把它们暴露为不透明结构，交由提供商层透传。两个系统级约束决定了这样不够：
+
+1. **严格 schema 的容量是共享预算。**许多提供商限制严格 schema 的数量。独立开发的扩展装得足够多，就可能让提供商拒绝每一次请求。用户不该为了恢复 harness，被迫二分排查并修改插件。
+2. **语法方言因提供商而异。**把 LARK 语法传给所有提供商，本身就可能非法。扩展也无法维护兼容性映射，因为用户可能通过原生宿主、代理或自定义提供商访问同一个模型。
+
+所以，看起来“复杂”的实现应该放在推理层：
+
+![图 12：真正兑现 strict 所需的完整机制](https://pub-0d530dc48245462d8f3734870a46cd58.r2.dev/figure-12.png)
+
+*真正兑现 strict，需要提供商能力、带优先级的严格 schema 预算、按方言规范化，以及客户端修复路径；不透明的透传结构无法提供任何一项。*
+
+扩展声明意图：严格程度、语法、优先级。推理层负责能力、预算、方言规范化、回退、修复，以及最终传输格式。
+
+<a id="corrective-inference"></a>
+
+### 纠错式推理
+
+推理库还需要：
+
+1. 修复格式错误的 JSON。
+2. 检测 Gemini、DeepSeek 等模型中的重复循环。
+3. 解析各模型的输出方言，在结构化输出泄漏进文本时，生成规范的 `tool_call` 和 `think` 块。
+
+![图 13：泄漏为普通文本的工具调用](https://pub-0d530dc48245462d8f3734870a46cd58.r2.dev/figure-13.png)
+
+*由于没有将该方言解析成 tool_call 块，泄漏出的工具调用被当成普通文字渲染。*
+
+关于工具调用这一面，可以读我的[上一篇文章](https://blog.can.ac/2026/08/03/the-minutiae-of-tool-calling/)。支持某个提供商或模型，除了接上一条 URL，还需要处理它各自的特殊行为。
+
+能打开一条流，并不意味着提供商适配器完成了。即使出现错误 JSON、重复、推理泄漏或模型特有的工具调用方言，harness 的其他部分仍能收到一个规范回合，才算完成。
+
+<a id="compaction-is-scheduled-not-triggered"></a>
+
+### 上下文压缩应该提前调度，而不是临界触发
+
+> 在到达上限之前，基于日志快照开始生成摘要；到达上限时，只有该快照仍对应当前分支，才提交摘要。
+
+这里最朴素的设计，恰好也带来了最差的用户体验：用户投入最深的时刻，却得等待整个会话里最大的一次请求。
+
+除了 **[Snapcompact](https://stencil.so/blog/snapcompact)** 这类方法，这里仍有大量改进空间。
+
+![图 14：达到限制后才开始压缩](https://pub-0d530dc48245462d8f3734870a46cd58.r2.dev/figure-14.png)
+
+*即便前沿实验室，交付的也还是这种朴素设计。*
+
+更好的办法是在距离上限大约还有 10% 时，推测性地启动压缩。实际上，就是把对话分成两个并行版本：一个让用户和模型继续工作，另一个让模型压缩对话。
+
+![图 15：推测式压缩的触发时点](https://pub-0d530dc48245462d8f3734870a46cd58.r2.dev/figure-15.png)
+
+*看到那个指示推测式压缩何时触发的图层图标了吗？*
+
+收到结果后，再把它拼接进另一个分支。这样也能保住工作势头：模型不会只面对一条孤零零的交接消息而迷失，反而能看到那些它本来就*应该*完成的后续进展。
+
+除提示词外，还可以考虑：
+
+- **远程压缩**：由提供商在服务端完成。OpenAI API 返回一个不透明状态块，但由于它能够访问解密后的思考内容，可以显著减轻上下文损失。
+- **交接（Handoff）**：与其要求摘要，不如试着让模型“交接”工作。
+- **Shake**：完全在本地进行，直接裁掉历史中体积庞大的工具结果。
+
+这也是设计 UI 渲染与请求渲染抽象时需要考虑的事。用户查看历史，希望所有消息仍保持原样；但对模型而言，其中一些消息已经不复存在。因此，构造请求时，应把提示词历史中的每个条目建模为一次“归约”：`fn(this, req) -> req`，在 `<Handoff>` 的实现中处理它。
+
+<a id="use-small-local-models-for-harness-work"></a>
+
+### 用本地小模型处理 harness 内部工作
+
+微型本地模型非常有用！即使你真正工作时只用前沿模型，我也建议内嵌某种 `tiny` 模型，尤其可以看看 LiquidAI 的模型。分类，以及生成标题、翻译、判断用户对对话进展的满意度等小任务，都能因此省下大量延迟和费用。另一个用途当然是 TTS／STT，现在本地也已经能达到最先进的性能水平。
+
+这不是第二个“agent”，而是处理小任务的低成本内部能力；这些任务不该支付前沿模型的延迟与价格。
+
+兼容性与修复集中处理后，常驻工具接口就可以保持精简。下一章讨论哪些东西值得在每次请求里占有一个 schema，以及哪些明确不值得。
+
+
+<a id="the-tool-surface"></a>
+
+## 06 工具接口
+
+> 每个常驻工具，都会让每个回合付出代价；保持工具列表精简，让原语承担深层职责。
+
+运行时一章定义了工作如何执行；推理一章定义了 schema 如何适应模型和提供商。我们终于可以问一个产品问题：哪些操作值得占据模型的常驻语法？
+
+<a id="every-schema-has-a-tax"></a>
+
+### 每个 schema 都有成本
+
+把大多数工具呈现给模型的最佳方式，就是**根本不把它们放进常驻工具列表**。
+
+前些时候，有人抱怨 omp 在相同任务上比 codex 慢，慢的不是 token 数，而是实际耗时。我本以为这没什么实质问题，没想到竟然是真的，甚至接近两倍！
+
+![图 16：工具列表对实际耗时的影响](https://pub-0d530dc48245462d8f3734870a46cd58.r2.dev/figure-16.png)
+
+*各变体的实际耗时中位数（粗条，秒）与请求前缀（细条，千 token）。任务为 SOL，每个变体运行 6 次，每次新建会话；青色代表 omp 变体，灰色代表外部参照，标注数值为相对上一行的变化。*
+
+罪魁祸首就是工具列表。把它限制为五个必需工具后，耗时变为 `36.6s`，快于 Codex 的 `42.2s` 和 Pi 的 `37.0s`。为什么？工具语法！对模型而言，它即便看起来只是文本描述，在多数前沿模型提供商那里，也会主动参与 token 生成：除了描述本身占用的 token，它还影响生成过程，促使模型始终给出合法 JSON。
+
+不能抱着“万一模型用得上”的想法，认为加一个工具是免费的收益。动态工具发现正是基于这一认识。但动态方法只要改变工具列表，就会使缓存失效，所以我们并不特别喜欢它。
+
+Pi 有一点做对了，我们也一直赞同：MCP 的设计糟糕透顶，不该进入常驻工具层。那么，既想要 Figma MCP 的用户需求，又要满足推理约束，怎么兼顾？
+
+动态工具发现避免了常驻语法开销，却在每次列表变化时让缓存失效。更好的目标是：稳定而微小的语法，配合通过普通组合方式可达的长尾能力。
+
+<a id="put-the-long-tail-behind-stable-surfaces"></a>
+
+### 把长尾能力放到稳定接口后面
+
+认识一下 `dyn` CLI！当然，它并不是真正的 CLI，而是我们的 Bash 实现暴露的内置命令。它给模型一套稳定的发现协议，让模型可以方便地通过 Bash 使用，也能在 `Eval` 中把它当作 Python 函数调用。
+
+```
+dyn
+dyn --q github
+dyn github/list_prs --state open | jq '.[] | .title'
+cat query.sql | dyn database/query - --params limit=5
+dyn image_gen "blueprint of a frog" > result.json
+```
+
+找到感兴趣的工具后，和工具搜索一样，用 `--help` 获取详情：
+
+```
+$ dyn github/create_pr --help
+dyn github/create_pr <title> [OPTIONS]
+
+Arguments:
+  <title>
+
+Options:
+  -d, --draft / --no-draft
+  -r, --reviewers <TEXT>[,…]  (repeatable)
+  -p, --pr-meta.priority <INTEGER>
+  -m, --pr-meta.notify / --no-pr-meta.notify
+  -j, --json <JSON>
+  -h, --help
+```
+
+这些当然是由 JSON schema 合成的；仅凭 schema，就已经足够生成一套不错的 CLI 映射。
+
+输入很大时，这种方式尤其舒服：
+
+```
+dyn database/query "SELECT 1"       # literal
+dyn database/query @query.sql       # file contents
+cat query.sql | dyn database/query - # stdin
+```
+
+还有一个边界情况：返回图片的工具怎么办？omp 怎么向你显示图片？Sixel 或 Kitty 协议，对吧？那为什么不在 `Bash` 工具里解析同样的输出，并把图片附上！这下连通过 ssh 查看远程图片也支持了，真不错。
+
+如果所有操作都属于同一套 API，还有第二种选择：暴露代码接口。Browser 保持 `open` / `run` / `close`，在持久化标签页上运行代码；Computer 在持久会话里暴露 `desktop`、`wait` 和 `assert`。只用一个稳定 schema，在一次调用内部组合操作。**操作集合有界，用 schema；操作集合开放，用代码接口。**
+
+这两种形式服务于不同形态的 API。有限的操作集合可以保留为 schema；开放的操作集合更适合代码或命令接口，在一次调用内组合多个操作。两者都不需要在发现能力后改变常驻工具列表。
+
+<a id="contract-hygiene-intent-and-version"></a>
+
+### 契约的基本卫生：意图与版本
+
+契约中有个小改动值得单独说：每个工具都有一个 `i` 意图参数。它在参数流入时就到达，因此 `renderCall` 可以在调用完成之前，展示模型自认为正在做什么。日志也因此获得可读摘要，不必每个工具另造 `reason` / `purpose`。
+
+大家应该**给工具设版本**。
+
+这会让追踪记录好用得多：对于频繁变化的工具，可以解析它的输入输出、评估成功率随时间的变化，而不必猜测每次调用采用的是哪版契约。
+
+名称、版本、意图、输入、输出、诊断和用量，都是协议数据。一旦追踪记录被用于评估或修复，猜测其中任何一项都会变成原本可以避免的技术债。
+
+<a id="deep-builtins"></a>
+
+### 深度内置工具
+
+精简工具列表能成立，前提是原语的广度有语义上的理由，而不是把不相干的功能一股脑塞进 switch。omp 的内置工具是很好的例子。
+
+<a id="read-materialize-a-resource"></a>
+
+#### Read：将资源物化为可用表示
+
+`omp` 中最无聊的工具，实际上装下了其他系统可能拆成 20 个工具的能力。
+
+- 能读目录，不需要 `Ls`。
+- 不必再加 `ReadNotebook`；读取 `.ipynb` 文件，默认就得到整理好的输出。
+- `.pdf`、`.docx`、`.pptx`、`.xlsx`、`.epub`？返回提取出的 Markdown。
+- `.cpuprofil, .sample.txt`？猜对了，返回瓶颈摘要。
+- `.sqlite`、`.sqlite3`、`.db`、`.db3`？可以列出表、检查 schema 和行，甚至查询。
+- 图片会返回图像；无视觉能力时返回元数据。预览 SVG，加上 `:img`。
+- 无需解包就能寻址归档文件中的内容，不仅支持 ZIP 和 TAR，也支持 JAR、wheel 和 ASAR。
+- 相同投影也适用于 `http://...` 在线资源，按需读取范围；普通网页转成 Markdown，就像 `web_fetch`。
+
+这不是为了炫耀而使用多态。从模型的视角看，它们是同一种操作：
+
+> 将这个资源物化为最有助于我推理的表示。
+
+对于代码，它还可以返回结构摘要，把大型声明体替换为省略号。模型不必仅为寻找类 `X`，就把整个大文件拖进上下文。
+
+需要原始字节时，`:raw` 绕过投影。`:conflicts` 则让每个未解决的合并冲突块只占一行，不必让模型在整个文件里搜寻。
+
+范围可以开放结尾、按长度指定，也可以不连续：
+
+```
+:50
+:50-
+:50-200
+:50+150
+:5-16,960-973
+:raw:50-100
+:50-100:raw
+```
+
+还有非网页 URL：
+
+```
+artifact://<id>
+agent://<id>
+history://<id>
+issue://123
+pr://123/diff/2
+skill://react
+rule://foo
+memory://...
+local://...
+vault://...
+security://...
+omp://...
+xd://browser
+ssh://host/path
+mcp://...
+```
+
+仓库信息、MCP 资源、subagent 会话记录、技能、记忆、本地临时空间、omp 文档，甚至通过 SSH 访问的远程机器，都能放入同一个内部 URL 子系统。我们推荐这种设计。
+
+`Read` 还负责一些不太显眼的容错：根据唯一的工作区后缀修复错误绝对路径、在 Windows 上展开 `~`，以及避免其他白白浪费回合的路径错误。
+
+它能不能只是这样：
+
+```
+return await Bun.file(path).text();
+```
+
+当然可以。然后扩展作者会自己写读取器，或者模型寻找 shell 替代方案，同时 harness 又用 `web_fetch` 等不同名字暴露形态相近的能力。
+
+这并没有减少复杂性。同一份复杂性只是被复制进 shell 命令、提示词、扩展和失败的工具调用里，没有人拥有它，每个人都以略有不同的方式实现了其中 30%。
+
+`Read` 之所以复杂，是为了让读取这件事不复杂。
+
+复杂性只有一个所有者。操作保持稳定，资源特有的投影被放到背后。
+
+<a id="bash-a-policy-aware-command-language"></a>
+
+#### Bash：理解策略的命令语言
+
+Bash 工具不应该只是转调 Bash。听起来很疯狂。
+
+omp 在进程内自带完整的 bash 解析器、解释器，以及一整套 coreutils。这是个好选择，理由很简单：
+
+- 保留模型的肌肉记忆。它可以继续用 `grep`；因为解释器是 omp，我们能拦截命令，把适合的参数路由到自己的 ripgrep 引擎。不必再在 `AGENTS.md` 里耗费上下文，求模型使用 `rg`。
+- 几乎顺带获得平台无关性。不需要 WSL 或 Git Bash：omp 能在 Windows 上于进程内执行大多数 Bash 调用。无需多言。
+- 控制台在多次调用之间保留状态，包括变量、退出码、`$!` 等。
+
+更有意思的优势，在 Claude 发来这样的调用时出现：
+
+```
+INC="…/10.0.22621.0"; declare -A R
+for d in um shared ucrt; do while IFS= read -r f; do b="${f##*/}"; R["${b,,}"]="$f"; done \
+  < <(find "$INC/$d" -maxdepth 1 -type f -name "*.[hH]"); done
+n=0
+while IFS= read -r ref; do case "$ref" in */*) continue;; esac; r="${R[${ref,,}]:-}"; \
+  [ -n "$r" ] || continue; rd="${r%/*}"; rn="${r##*/}"; \
+  if [ "$ref" != "$rn" ] && [ ! -e "$rd/$ref" ]; then ln -s "$rn" "$rd/$ref"; n=$((n+1)); fi; \
+done < <(grep -rhoiE "#[[:space:]]*include[[:space:]]*<[^>]+>" "$INC/um" "$INC/shared" "$INC/ucrt" \
+  | sed -E "s/.*<([^>]+)>.*/\1/" | sort -u)
+```
+
+你能在 5 秒内告诉我它在做什么吗？如果说能，那你在撒谎。
+
+无论你怎么看工具审批，这都很糟糕：没人会读。Anthropic 最近的研究也指向同一结论：auto mode，也就是让另一个 Claude 阅读命令，效果远胜人类。
+
+当 omp 自己解释命令时，可以等执行真正到达 `ln` 才询问；之前的一切都是只读。如果用户已经允许写入该目录，连这次询问也可以省掉。
+
+harness 因此从“Bash 安检口”转变为能力审批者：“我可以用 Git 推送吗？”`find`、`cat`、`ln` 等常用命令在进程内运行，在实际需要时查询访问模型，并继承用户已有的读写策略。
+
+因为常用命令由宿主解释，审批能落在真正重要的能力边界上：`git push`、工作区外写入、网络请求，而不是落在难以阅读的 shell 字符串边界上。第三章的运行时策略终于能够执行，同时保留模型使用 shell 的肌肉记忆。
+
+<a id="autoqa-give-agents-a-bug-report-path"></a>
+
+#### AutoQA：给 agent 一条报告 bug 的路径
+
+我们在分叉项目一个月后就添加了这个工具，比 Anthropic 在自家产品中加入类似能力更早。
+
+产品通常会给用户一个报告问题的入口，对吧？这就是面向 agent 的同类入口。它让你完全自动地收集信息：agent 喜欢工具的哪些部分，哪些地方感到困惑，哪些行为看起来有错。
+
+报告质量现在还算不上*很好*。比如 Codex，很喜欢把外部文件编辑导致的问题怪到 `Read` 上，或者重命名没做好就怪 LSP 工具——*不是我的错，兄弟，去问 TypeScript 那帮人*。但这些误报很容易过滤。过滤之后，你会得到大量有价值的信号，知道哪个工具失败了、可以怎样改进。
+
+AutoQA 在工具设计与部署后的行为之间形成闭环。虽然有噪声，但过滤明显的错误归因后，就能看出哪些操作让模型困惑、哪些投影隐藏了所需数据，以及哪些修复应该归入 harness。
+
+工具现在有了有界运行时、稳定发现接口和结构化状态。为了安全地展示这些状态，用户不该还得指望每位工具作者——往往就是 Claude——都成为终端渲染与安全专家。
+
+<a id="the-interface"></a>
+
+## 07 界面
+
+- **267 秒 → 90 毫秒**：一次会话的渲染时间。
+- **13%**：一次 `.includes` 占据的剖析 CPU 比例。
+- **98.7 秒**：`wrapAnsi` 重复换行所花的时间。
+- **0 张图片**：该会话实际包含的图片数量。
+
+> 带 ANSI 转义的字符串数组，加上 render()，并不能构成一个好的渲染原语。
+
+会话 DOM 与工具状态流让每个客户端获得相同事实，但本身并不自动产生安全、快速、一致的界面。渲染器仍可能把这些事实变成反复解析的字符串、扩展各自的样式约定，以及无法挽回的滚动历史 bug。
+
+<a id="what-omp-taught-us-strings-compound"></a>
+
+### omp 带来的教训：字符串让成本层层叠加
+
+这其实就是我最早提交给 [pi-mono 的 PR](https://github.com/earendil-works/pi/pull/1084)之一所讨论的问题。修改之前，如果在一个任务期间对 Pi 做性能剖析，再看 CPU 使用，榜单几乎完全被——猜对了——渲染器占据！
+
+![图 17：被渲染器主导的 Pi 会话 CPU 剖析](https://pub-0d530dc48245462d8f3734870a46cd58.r2.dev/figure-17.png)
+
+*Pi 会话自身耗时的矩形树图：渲染器占据主导，单是字符串扫描（红色）就烧掉了会话五分之一的时间。原始交互图可悬停查看对应代码。*
+
+作为 TypeScript CLI，其中一部分不可避免。光是字符串内部使用 UTF-16，就意味着每一帧都要经历相对昂贵的转码，除非你像疯子一样用 Uint8Array 到处传文本。
+
+但真正让成本层层叠加的是契约本身。想嵌入一个子组件？现在你要处理：
+
+- 清洗这个 `string`，并丢弃 ANSI 转义，或识别并跳过它们。
+- 处理每一行的填充、截断与计算。
+
+图片还可能以 base64 文本形式混在其中某一行，这只会雪上加霜。仅仅为了判断某一行是不是图片行而调用 `.includes`，就占据了一次会话总 CPU 周期的 20%。这账单可不便宜，而且该会话里甚至没有图片！
+
+> 译注：本章开头列出的单次 `.includes` 比例为 13%，此处正文写为 20%；两处均按原文保留，未擅自统一。
+
+而这张图还只涵盖 JavaScript 一侧。这样的渲染管线简直是一台反复折腾堆内存的机器：不断分配、拆解、丢弃字符串及字符串数组；拼接、分割、截断、填充，一路上每一步都重复。真不妙。
+
+同一个契约还让扩展缺乏共同的设计语言。只要用过*任何* Pi 扩展，你就知道，除了逐个让 Clawd 重做样式并持续维护，根本没办法让它们遵循统一规范。
+
+是否用圆角边框、能否使用 Nerd Font 图标、是否采用你喜欢的颜色来传达操作语义，都没有契约。你会发现：
+
+- 99% 的时候，它只做最低限度的事，比如截断和换行；所有工具都成了分不清彼此的灰色矩形。
+- 1% 的时候，它又太想显得花哨，在其余部分都很简约的环境里格格不入。
+
+Pi 目录中的一个社区渲染器，展示了这种契约如何影响最终交到用户手里的东西：
+
+```
+  if (cq.sources.length > 0) {
+    lines.push("");
+    for (const s of cq.sources) {
+      const domain = s.url.replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+      const title = s.title.length > 50 ? s.title.slice(0, 47) + "..." : s.title;
+      lines.push(theme.fg("muted", ` \u25b8 ${title}`) + theme.fg("dim", ` \u00b7 ${domain}`));
+    }
+  }
+  lines.push("");
+} else {
+  const textContent = result.content.find((c) => c.type === "text")?.text || "";
+  const preview = textContent.length > 500 ? textContent.slice(0, 500) + "..." : textContent;
+  for (const line of preview.split("\n")) lines.push(theme.fg("dim", line));
+}
+
+if (details?.fetchUrls?.length) {
+  if (details.curated) {
+    lines.push(theme.fg("muted", `Fetching ${details.fetchUrls.length} URLs in background`));
+  } else {
+    lines.push(theme.fg("muted", "Fetching:"));
+    for (const u of details.fetchUrls.slice(0, 5)) {
+      const display = u.length > 60 ? u.slice(0, 57) + "..." : u;
+      lines.push(theme.fg("dim", "  " + display));
+    }
+    if (details.fetchUrls.length > 5) lines.push(theme.fg("dim", `  ... and ${details.fetchUrls.length - 5} more`));
+  }
+}
+```
+
+这里有不少问题：
+
+1. 按码点而不是可见宽度切割文本；窗口缩到 40 列以下时，它就会冲出所在行，把下面的内容挤坏。
+2. 不感知终端宽度，即便空间足够，也照样显示省略号！
+3. 最重要的是，它无视 Pi 组件的第一条规则，没有清洗外部输入。这意味着它抓取的内容只需提供合适的 ANSI 转义，就能把整个 UI 替换成一张鸭子图片。[当然](https://www.sentinelone.com/vulnerability-database/cve-2023-32712/)[绝不](https://socprime.com/active-threats/cve-2025-55752/)[可能](https://github.com/boxdot/gurk-rs/issues/384)[再干别的](https://www.packetlabs.net/posts/weaponizing-ansi-escape-sequences/)！
+
+把复杂性推给毫无防备的开发者——通常是 Claude——自然就会发生这种事。
+
+LLM 不会在每次被要求“帮我做个工具 UI”时，都记住 harness 的所有内部细节。说实话，有时连我也不想记；而冒烟测试看着可用，就会通过。
+
+性能、安全和一致性问题有同一个根源：一个已经渲染过的字符串，同时被当作布局树、样式树、内容、传输载体和终端程序。
+
+<a id="what-omp-changes-a-one-pass-primitive"></a>
+
+### omp² 的改变：单遍处理原语
+
+最底层的使用者——除非你提交 PR，否则不是你——把 *RichText* `(Style, String)` 推入传给它们的抽象管线 `(&mut impl Out)`。
+
+这把 267 秒的渲染时间降到了 90 毫秒：
+
+![图 18：从反复解析字符串到 RichText 单遍流处理](https://pub-0d530dc48245462d8f3734870a46cd58.r2.dev/figure-18.png)
+
+*之前：render(): string[]，N 个组件 × M 次变换，每一帧都重新解析、测量和分配每个缓冲区。之后：RichText 片段流经抽象管线，单遍进入帧差异。*
+
+临时对象、ANSI 解析、字素处理，在帧渲染器之下的每一层都**彻底消失**了，当然！
+
+既然可以直接流出填充、再流出你的一行内容，然后重复，为什么还要先给组件填好空白再往下传？既然可以在省略号之后直接丢弃流，或把拆行作为变换的一部分，为什么要让你把 255 行差异完整彩色渲染，再 `.slice(0, 3)`，只为截成另一个字符串缓冲区数组？
+
+底层原语统一负责测量与变换。高层绝不该再解析 ANSI，去发现自己刚刚输出的结构。
+
+<a id="a-typed-component-model"></a>
+
+### 带类型的组件模型
+
+接下来，`string[]` 将被真正的组件模型替代。高层使用者只需堆叠盒子，让 LSP 为他们指路：
+
+![图 19：带类型的标记](https://pub-0d530dc48245462d8f3734870a46cd58.r2.dev/figure-19.png)
+
+*标记有类型：把元素嵌套在 `<Text>` 内，会在编辑时产生 lint 错误，而不是运行时得到破碎的一帧。*
+
+![图 20：标记输入，画面输出](https://pub-0d530dc48245462d8f3734870a46cd58.r2.dev/figure-20.png)
+
+*标记输入，画面输出：`<Box>`、`<Row>/<Col>`、`<ico:new/>` 图标、水平洋红到青色渐变，以及由分数公式实时渲染的 ½。*
+
+我可能不喜欢做前端，但我可太喜欢好的抽象了。`(Element, Props, Children)` 配上布局引擎，就已经足够让这一切相比之下美妙得多。
+
+DOM 一章承诺任何 actor 都能渲染工具元素。这个承诺具体长这样。
+
+这就是 `Read` 组件的样子。还不错，对吧？
+
+```
+<box bc=muted>
+	<row kind=title gap=1>
+		<text>•</text>
+		<text bold>Read</text>
+		<a href={input.path}>{input.label}</a>
+		{#if status=error}<badge tone=error>exit {code}</badge>{/if}
+	</row>
+	{#if result.head}<pre lang={result.lang} wrap=word start={result.start}>{result.head}</pre>{/if}
+	{#if @expanded}
+		{#if result.blob}<pre lang={result.lang} numbers start={result.start} blob={result.blob}></pre>{/if}
+	{/if}
+	{#each diag as d}<callout tone={d.severity}>{d.msg}</callout>{/each}
+	{#if result.src}
+		<hr title="Output"/>
+		<row gap=1 fg=muted>
+			<text>⟨Resolved path:</text>
+			<text>{result.src}⟩</text>
+		</row>
+	{/if}
+	{@render usage}
+</box>
+```
+
+工具作者描述结构和语义。TUI、网页客户端、快照测试和远程检查器，决定如何在各自界面上布局这一结构。
+
+<a id="presentation-policy-belongs-to-the-renderer"></a>
+
+### 展示策略属于渲染器
+
+组件模型顺带带来两个有用性质：
+
+1. `<ico:new/>` 给每个插件方便的图标，同时尊重用户对 ASCII、Unicode 或 Nerd Font 的选择。边框同理。
+2. 语义颜色不再要求把主题对象穿过每个渲染器。Claude 可以请求 `info`，不必选一个具体颜色，再祈祷它适合用户的主题。
+
+![图 21：语义颜色、边框与渐变](https://pub-0d530dc48245462d8f3734870a46cd58.r2.dev/figure-21.png)
+
+*border=round bc="info" 解析为主题中的语义颜色；fg="red..blue" 表示渐变。无需在各处传递主题对象。*
+
+你也需要掌管文本流的节奏。Claude 和 Codex 输出分块的节拍差异很大：一个每次几个词，另一个每次几个字符。抹平这些差异，会改变 harness 给人的响应感：稳定移动意味着进展，一阵爆发后又停顿则不是。嘿。
+
+语义图标、边框、颜色、截断和流节奏，现在都有了唯一所有者。扩展只请求 `info`、`error` 或 `<ico:new/>`，无需把主题对象穿过每个函数，也不必替每位用户选择 Nerd Font 字形。
+
+<a id="verification-is-part-of-the-interface"></a>
+
+### 验证是界面的一部分
+
+在当下的开发“版本答案”里，回报最高、又几乎不花钱的投入，就是让 agent 为任何交互式 TUI／GUI 实现调试协议。如果“如何验证”未知且没有定义，agent 就会在旁路造一个看起来像验证的东西——多数情况下，是创建一个实际上没检查什么的测试文件。
+
+预先定义“验证”意味着什么，并提供方便的使用形式，能显著减少阻力，让验证成为开发循环的主动环节。
+
+![图 22：为交互界面提供调试与验证协议](https://pub-0d530dc48245462d8f3734870a46cd58.r2.dev/figure-22.png)
+
+形式本身并不重要，也随时可以调整：自定义工具、Python 包、API 都可以。但一定要提供一种非破坏性、离屏、支持多实例的*机制*，防止 agent 重新定义——而且通常是降低——成功标准。
+
+换句话说，调试协议成为 UI 是什么的机器可读定义，而不仅是测试辅助工具。
+
+<a id="the-transcript-is-a-protocol"></a>
+
+### 会话记录是一套协议
+
+TUI 真正不可能完成的任务，是让 GitHub 上关于它坏了的 issue 数量归零。人们对不了解的东西总是理想化；不幸的是，许多人不知道，他们想要的完美 TUI 体验——所有组件无论身处何处都动态更新、始终最新——根本不可能。
+
+<a id="blocks"></a>
+
+#### 块
+
+我们把规范会话记录定义为块列表。每个块产生文本行，并经历一个生命周期：
+
+active（活动）→ finalized（定稿）→ committed（提交）
+
+块 *i* 存活期间，展示当前快照 *Wᵢ*，它是一个行数组。定稿时，冻结为不可变快照 *Fᵢ*。
+
+块有两种模式：
+
+- **可变**：每个新快照都可能整体替换前一个，比如旋转指示器、进度。快照是推测性的，永不进入历史；只有 *Fᵢ* 会进入。
+- **只追加**：快照只增长，每个快照都是下一个的前缀，最后一个快照也是 *Fᵢ* 的前缀，比如流式文本。
+
+当块超出分配给它的视口空间时，这一区别就重要了。可变快照不能提前进入历史，因为后续更新可能替换它；那样就得把已经滚走的行拉回来。助手思考等只追加块，只会扩展稳定前缀，因此那个前缀可以立即开始提交。
+
+<a id="terminal"></a>
+
+#### 终端
+
+宽度为 *W*、高度为 *H* 的终端，有两个缓冲区：
+
+- *V*：视口，包含 *H* 个可见行。
+- *S*：原生滚动历史，无界、只追加。
+
+技术上，我们可以清空并重写滚动历史，但用户经常抱怨这种行为，因此“只追加”现在被设为不变量。
+
+换行函数 *wrapW* 把逻辑行转为物理行，取决于当前宽度。视口下面没有可寻址区域。写过底部会滚动终端，把顶部行不可逆地推进 *S*。
+
+逻辑历史 *L* 以未换行的行保存，因此与宽度无关：按块顺序排列的已提交最终快照，每个恰好出现一次，再加上当前流式块已经放行的部分。令 *c* 为最后一个已提交块，*j = c+1*：
+
+L = F₁ · F₂ ⋯ F꜀ · Wⱼ[1..eⱼ]
+
+其中 *eⱼ* 统计流头已经输出到历史的行数；除非块 *j* 是正在流式输出的只追加块，否则 *eⱼ = 0*。
+
+因此：
+
+- 已提交的最终快照按块顺序连续出现，恰好一次。
+- 可变的推测快照永不进入 *L*。
+- 只追加的头部块在流式输出期间，可以逐行进入 *L*。
+- 定稿不写入任何内容。
+- 提交只追加 *Fⱼ* 中尚未输出的行。
+
+<a id="resize"></a>
+
+#### 调整大小
+
+调整大小不改变逻辑：每个 *Wᵢ*、每个 *Fᵢ* 和 *c* 都保持不变，只重新计算换行和视口分配。已经进入原生滚动历史的行不能重写，因此需要为它们明确选择一种策略：
+
+- **保留（Preserve）**：保持终端模拟器已经换行的历史原样。
+- **追加（Append）**：追加重新渲染的历史，可能重复物理行。
+- **重建（Rebuild）**：开启新的物理 epoch，在其中重放历史。
+
+这些规则区分了三件容易混淆的事：视口中的可变展示、与宽度无关的逻辑历史，以及不可逆的终端原生行。为它们命名后，调整大小与流式输出就成为明确的策略选择，不再依赖口耳相传的经验。
+
+<a id="specify-the-impossible-part"></a>
+
+### 为“不可能的部分”写出规格
+
+为什么让你经历这些“数学”？因为这个算法非常复杂，很难验证是否合理。上一轮实现中，我们不得不编写 fuzzer，才达到稳定状态；这次我想避免重走这条路。
+
+于是，我们按上述描述用 [TLA+](https://lamport.azurewebsites.net/tla/tla.html) 建模，再要求迭代调整块的提交和定稿方式，直到全部明确写出的不变量得到满足。
+
+以后想修改，比如不管三七二十一地提交部分结果，或禁止块截断，就有一份可更新的参照，也有极其简单的方法判断它是否成立；失败时还会给出反例。
+
+论文与完整 `ElasticSlots.tla` 源码见[附录 B](#appendix-b-elastic-speculative-slots)。
+
+<a id="what-this-unlocks"></a>
+
+### 这带来了什么
+
+例行炫耀一下，然后继续！*现在有人抱怨 TUI 坏了，我就能给他一份形式化证明，说明为什么修不了。太棒了。*
+
+![图 23：omp² 任务执行中的 TUI](https://pub-0d530dc48245462d8f3734870a46cd58.r2.dev/figure-23.png)
+
+*任务执行中的 omp² TUI：实时并行分片上方的命令面板、带逐文件差异统计的会话侧栏，以及内联图片缩略图。每个元素都是同一条流式管线上的组件。*
+
+TUI、网页客户端与远程检查器可以布局不同，但事实不能不同。工具作者描述语义状态；组件系统负责展示；会话记录协议负责恰好一次的历史。
+
+同一种设计动作再次出现：把难以维持的不变量下沉到真正能够执行它的层。实现所用的技术栈也应该强化这些不变量，而不是鼓励每位贡献者、每个编码 agent 各自发明局部风格。
+
+
+<a id="the-stack"></a>
+
+## 08 技术栈
+
+> 选择那些能通过自身约束，引导 agent 写出你愿意维护的代码库的语言。
+
+前几章讨论的是架构。语言选择决定了：从架构走向下一个“好心”的局部例外，代码库会设置多大的阻力。当大量实现由 agent 生成，而它们的训练又吸收了各生态的默认做法与病症时，这一点更重要。
+
+<a id="language-choice-is-architecture"></a>
+
+### 语言选择就是架构
+
+**在当下，除非不得不与前端代码打交道，否则 TypeScript 是一个糟糕的选择。**
+
+现在启动项目时，最有影响力的决定之一，就是选对工具。三年前，如果看见文章这样开头，我一定会开始反驳。但……不相信的话，试着给 Claude 完全相同的提示词，描述你想做的小组件。
+
+然后把 macOS（Swift）换成 Linux（Qt/JS）。前者会给你一个具有玻璃质感、看起来与操作系统浑然一体的小组件；后者会给你一个矩形，UI 元素彼此重叠，用户体验选择令人怀疑，仿佛你刚读完定义 UI 所需的 XML schema，这是第一次尝试编译。
+
+当然，提示词的写法有影响，你确实可以描述得更详细。但一段时间后，你会发现，无论怎么做，其中一个几乎不费力就能胜过另一个。macOS 历来有一点做得好：强制开发者遵循一致的设计风格；对 LLM 也一样。
+
+重点不是 Swift 自带品味、JavaScript 没有。而是默认值、标准库、典型项目结构、编译器反馈与生态惯例，会成为生成代码的先验。一种允许二十种同样常见的局部风格的语言，要求模型在触及产品问题之前，先做二十次决定。
+
+<a id="typescript-becomes-your-language"></a>
+
+### TypeScript 最终会变成“你的语言”
+
+遗憾的是，我曾经喜欢 TypeScript 的一点，恰恰是它最终总会变成*你的*语言：
+
+- 用 `camelCase`，还是 `snake_case`？或者干脆把库叫作 `$`？
+- 写横跨 200 行的泛型，还是一个泛型也不要？
+- 用 `Buffer`，还是 `Uint8Array`？
+- 用 Zod，还是 Typebox？
+- 用 `Array<T>`，还是 `T[]`？
+- 用 ESM，还是 CJS？扩展名又选什么：`.ejs`、`.cjs`、`.mjs`、`.js`？
+- 用 TypeScript，还是 JSDoc？
+- 用 Class，还是对象？甚至 `new function()`？
+- 是否 default export？
+- 星号重新导出，还是逐个列出名字？
+- 用 `private foo`，还是 `#foo`？
+- 用 `module/index.ts`，还是 `module.ts`？
+- 用 `const x = () => ..`，还是 `function x() {`？
+- 用 `function x(args)`，还是 `function x(...args)`？
+- 如果是后者，用 `...args: any[]`，还是 `...args: unknown[]`？
+- 用 `const X = 1`、`enum E { X = 1 }`，还是 `const enum E { X = 1 }`？
+
+你看，我在人生中花了十年使用最典型的“只写不读”语言 C++，所以确实能从这些选择里找到乐趣。但当必须在 Zod 和 Typebox 之间选择时，你那位初级同事会直接手写一个所谓的 `isRecord`。既然能联合类型，为什么用泛型？既然加一点 typeof 就能特殊处理，为什么要在脑中确保每个分支都适用于两种类型？为什么用类，不就是对象和原型吗？
+
+也许是外面糟糕 JS 代码太多，也许是它们训练时还吞下了一大堆压缩代码，总之我厌倦了。考虑到同一个“初级同事”已经能找到 Linux 零日漏洞，如果我是你，就不会继续寄希望于*正确的模型*或*正确的代码质量工具*，也不会再绕这么多弯。
+
+也许 EffectJS 能改变这一点。我认为，最终 Go 会胜出，尤其等 WASM 的 GC 提案最终落定之后。理由与 Swift 在设计方面胜出相似，加上编译速度和交叉编译的便利。不过，有些场景需要更底层的系统语言，因此这里我们选择了 Rust。
+
+它们仍需要经常引导：总爱走最短路径，为了避开复杂借用而分配副本，用字符串传错误而不用 `thiserror`。但 `std` 加上 `serde` 生态，已经提供了它们工作所需的大多数东西；编译器又提供了相当程度的安全性。所以，就这么定了。
+
+<a id="python-for-extensions"></a>
+
+### 用 Python 编写扩展
+
+下一个决定是：要不要为了可扩展性，把 TS 请回来？我们说不，主要因为：
+
+1. agent 能写出不错的 Python，因此也能写出不错的扩展。
+2. 想用很小的体积提供符合规范的 JS *运行时*，基本不可能——谢谢你，Locale。而如果没有生态，还不如运行 Lua。
+3. 扩展消耗的运行时间连 1% 都不到，确实不需要 JIT。
+4. 内嵌完整 Python 运行时，就能保证 `eval` 开箱即用；不必要求用户安装 py3，结果在交付的工作流中始终无法放心依赖它。
+5. Python 代码原生就能检查自身 AST。这正是运行时一章中 `@remote` 设计得以成立的原因。
+
+运行时一章介绍了 `@remote` 边界。Python 的内省和属性模型让这条边界易于使用：SDK 可以检查函数、打包相关源码，再放到沙箱运行时执行，不必让每位扩展作者手写 RPC。
+
+自带运行时也让 `Eval` 成为可靠的内置能力，而不是只有用户碰巧安装了兼容 Python 才能工作的功能。
+
+<a id="closing-notes"></a>
+
+## 09 结语
+
+> Agent harness 是系统软件，不是给 fetch 套一层 while 循环。
+
+开头的问题是：“可为什么？”直接的答案是，上面每一章所讨论的软件类别，都有数十年的既有积累：复制、沙箱、配置、调度、协议兼容、实时渲染，以及语言／运行时设计。
+
+omp² 仍在依据这份文档构建，各部分的状态从已经交付到仍在思考不等。但我们真诚感谢每一位尝试过它，并分享过各种精彩 omp 用法的人：从让它运营一座软件工厂，到让它在同一台手机上给自己做一个相机应用。
+
+![图 24：用户分享的 omp 使用案例](https://pub-0d530dc48245462d8f3734870a46cd58.r2.dev/figure-24.png)
+
+[原始推文](https://x.com/i/status/2092690773221458376)
+
+你们塑造了 omp，我们期待未来同样精彩！
+
+---
+
+<a id="appendix-a-state-failures-in-the-official-examples"></a>
+
+## 附录 A：官方示例中的状态故障
+
+状态一章按类别概括了这些故障。本附录保留原始证据：源码链接、最小代码片段与复现视频。
+
+这不是理论上的判断。我们检查了 78 个官方扩展示例：60 个无状态；17 个有状态的示例中，只有两个正确。
+
+<a id="1-the-checkpoint-is-cleared-before-fork-can-use-it-git-checkpointts"></a>
+
+#### 1. `/fork` 尚未使用，检查点就已被清空：`git-checkpoint.ts`
+
+[源码](https://github.com/earendil-works/pi/blob/853a80d26c90a14c1886f0ebb8ffaae133ca2185/packages/coding-agent/examples/extensions/git-checkpoint.ts#L11-L51)：缺少对检查点的持久所有权。`/fork` 在空闲时调用，而 `agent_settled` 已经清空了唯一保存 stash 引用的 map。
+
+```
+const checkpoints = new Map<string, string>();
+// …
+pi.on("agent_settled", async () => {
+  checkpoints.clear();
+});
+```
+
+![图 25：git-checkpoint 故障复现](https://pub-0d530dc48245462d8f3734870a46cd58.r2.dev/figure-25.png)
+
+[原始视频](https://stencil.so/blog/harness-playbook/bugs/git-checkpoint.mp4)
+
+<a id="2-tree-navigation-does-not-restore-state-plan-modeindexts"></a>
+
+#### 2. 在树中导航不会恢复状态：`plan-mode/index.ts`
+
+[源码](https://github.com/earendil-works/pi/blob/853a80d26c90a14c1886f0ebb8ffaae133ca2185/packages/coding-agent/examples/extensions/plan-mode/index.ts#L340-L352)：缺少 `session_tree` 和 `getBranch()`。回退后计划模式及其工具限制仍然生效，恢复时则可能复活废弃分支的快照。
+
+```
+const entries = ctx.sessionManager.getEntries();
+const planModeEntry = entries
+  .filter((e) => e.type === "custom" && e.customType === "plan-mode")
+  .pop();
+```
+
+![图 26：plan-mode 故障复现](https://pub-0d530dc48245462d8f3734870a46cd58.r2.dev/figure-26.png)
+
+[原始视频](https://stencil.so/blog/harness-playbook/bugs/plan-mode.mp4)
+
+<a id="3-the-counter-cannot-count-history-status-linets"></a>
+
+#### 3. 计数器不会统计历史：`status-line.ts`
+
+[源码](https://github.com/earendil-works/pi/blob/853a80d26c90a14c1886f0ebb8ffaae133ca2185/packages/coding-agent/examples/extensions/status-line.ts#L10-L23)：缺少基于分支的推导。从第 3 回合退到第 1 回合，下一回合却显示 4；恢复会话则重新从零开始。
+
+```
+let turnCount = 0;
+// …
+pi.on("turn_start", async (_event, ctx) => {
+  turnCount++;
+```
+
+![图 27：status-line 故障复现](https://pub-0d530dc48245462d8f3734870a46cd58.r2.dev/figure-27.png)
+
+[原始视频](https://stencil.so/blog/harness-playbook/bugs/status-line.mp4)
+
+<a id="4-a-dynamically-added-tool-survives-rewind-then-disappears-after-resume-dynamic-toolsts"></a>
+
+#### 4. 动态添加的工具回退后仍在，恢复后却消失：`dynamic-tools.ts`
+
+[源码](https://github.com/earendil-works/pi/blob/853a80d26c90a14c1886f0ebb8ffaae133ca2185/packages/coding-agent/examples/extensions/dynamic-tools.ts#L25-L33)：`/add-echo-tool echo_branch` 只写入运行中的扩展注册表；`/tree` 不重启该注册表，所以回退保留工具，但 `--continue` 会新建注册表，工具于是消失。
+
+```
+const registeredToolNames = new Set<string>();
+// …
+registeredToolNames.add(name);
+pi.registerTool({
+```
+
+![图 28：dynamic-tools 故障复现](https://pub-0d530dc48245462d8f3734870a46cd58.r2.dev/figure-28.png)
+
+[原始视频](https://stencil.so/blog/harness-playbook/bugs/dynamic-tools.mp4)
+
+<a id="5-a-save-returns-from-an-abandoned-branch-snakets"></a>
+
+#### 5. 废弃分支里的存档重新出现：`snake.ts`
+
+[源码](https://github.com/earendil-works/pi/blob/853a80d26c90a14c1886f0ebb8ffaae133ca2185/packages/coding-agent/examples/extensions/snake.ts#L320-L328)：恢复时扫描整个会话文件。在分支 A 保存，再回退到保存之前，打开 `/snake`，废弃存档便重新出现。
+
+```
+const entries = ctx.sessionManager.getEntries();
+for (let i = entries.length - 1; i >= 0; i--) {
+  const entry = entries[i];
+  if (entry.type === "custom" && entry.customType === SNAKE_SAVE_TYPE) {
+```
+
+![图 29：snake 故障复现](https://pub-0d530dc48245462d8f3734870a46cd58.r2.dev/figure-29.png)
+
+[原始视频](https://stencil.so/blog/harness-playbook/bugs/snake.mp4)
+
+<a id="6-last-message-means-last-in-the-file-bookmarkts"></a>
+
+#### 6. “最后一条消息”指的是文件中的最后一条：`bookmark.ts`
+
+[源码](https://github.com/earendil-works/pi/blob/853a80d26c90a14c1886f0ebb8ffaae133ca2185/packages/coding-agent/examples/extensions/bookmark.ts#L19-L25)：缺少 `getBranch()`。回退后，`/bookmark` 可能标记废弃分支上用户看不见的助手消息。
+
+```
+const entries = ctx.sessionManager.getEntries();
+for (let i = entries.length - 1; i >= 0; i--) {
+  const entry = entries[i];
+  if (entry.type === "message" && entry.message.role === "assistant") {
+```
+
+![图 30：bookmark 故障复现](https://pub-0d530dc48245462d8f3734870a46cd58.r2.dev/figure-30.png)
+
+[原始视频](https://stencil.so/blog/harness-playbook/bugs/bookmark.mp4)
+
+<a id="7-calculator-stays-active-after-rewinding-before-discovery-kimi-deferred-toolsts"></a>
+
+#### 7. 回退到发现之前，`Calculator` 仍启用：`kimi-deferred-tools.ts`
+
+[源码](https://github.com/earendil-works/pi/blob/853a80d26c90a14c1886f0ebb8ffaae133ca2185/packages/coding-agent/examples/extensions/kimi-deferred-tools.ts#L47-L60)：`tool_search` 激活了 `Calculator`，却没有 `session_tree` 处理器重新推导启用列表。导航到发现之前的位置，`Calculator` 仍然启用。
+
+```
+const active = pi.getActiveTools();
+const added = active.includes("Calculator") ? [] : ["Calculator"];
+if (added.length > 0) pi.setActiveTools([...active, ...added]);
+// Missing: session_tree → derive active tools from selected branch.
+```
+
+![图 31：kimi-deferred-tools 故障复现](https://pub-0d530dc48245462d8f3734870a46cd58.r2.dev/figure-31.png)
+
+[原始视频](https://stencil.so/blog/harness-playbook/bugs/kimi-deferred-tools.mp4)
+
+<a id="8-switching-sessions-commits-the-worktree-auto-commit-on-exitts"></a>
+
+#### 8. 切换会话会提交工作区：`auto-commit-on-exit.ts`
+
+[源码](https://github.com/earendil-works/pi/blob/853a80d26c90a14c1886f0ebb8ffaae133ca2185/packages/coding-agent/examples/extensions/auto-commit-on-exit.ts#L11-L42)：缺少只针对进程退出的边界。`/new`、`/resume` 和 `/fork` 都会触发 `session_shutdown`，进而暂存并提交有未提交变更的工作区。
+
+```
+pi.on("session_shutdown", async (_event, ctx) => {
+  // …
+  await pi.exec("git", ["add", "-A"]);
+  await pi.exec("git", ["commit", "-m", commitMessage]);
+});
+```
+
+![图 32：auto-commit-on-exit 故障复现](https://pub-0d530dc48245462d8f3734870a46cd58.r2.dev/figure-32.png)
+
+[原始视频](https://stencil.so/blog/harness-playbook/bugs/auto-commit-on-exit.mp4)
+
+<a id="9-live-and-restored-state-disagree-tic-tac-toets"></a>
+
+#### 9. 实时状态与恢复状态不一致：`tic-tac-toe.ts`
+
+[恢复逻辑](https://github.com/earendil-works/pi/blob/853a80d26c90a14c1886f0ebb8ffaae133ca2185/packages/coding-agent/examples/extensions/tic-tac-toe.ts#L631-L645)；[用户落子](https://github.com/earendil-works/pi/blob/853a80d26c90a14c1886f0ebb8ffaae133ca2185/packages/coding-agent/examples/extensions/tic-tac-toe.ts#L802-L810)：重建只接受工具结果，但用户落子记录为自定义条目。X 落下后、O 落下前崩溃，X 就消失了。
+
+```
+if (entry.type !== "message") continue;
+if (msg.role !== "toolResult") continue;
+// User moves take a different path:
+pi.appendEntry(SAVE_TYPE, getBoardDetails());
+```
+
+![图 33：tic-tac-toe 故障复现](https://pub-0d530dc48245462d8f3734870a46cd58.r2.dev/figure-33.png)
+
+[原始视频](https://stencil.so/blog/harness-playbook/bugs/tic-tac-toe.mp4)
+
+<a id="appendix-b-elastic-speculative-slots"></a>
+
+## 附录 B：弹性推测槽位（Elastic Speculative Slots）
+
+界面一章在正文阅读路径中保留了协议与结论。本附录收录论文，以及用于检查会话记录不变量的完整 [TLA+](https://lamport.azurewebsites.net/tla/tla.html) 模型。
+
+![图 34：Elastic Speculative Slots 论文](https://pub-0d530dc48245462d8f3734870a46cd58.r2.dev/figure-34.png)
+
+*《Elastic Speculative Slots》论文：三层契约、安全性定理与有条件的进展结论，与下方完整规格逐项对应。完整 PDF 见下面的链接。*
+
+[原始论文 PDF](https://stencil.so/blog/harness-playbook/elastic-slots.pdf)
+
+### ElasticSlots.tla：完整规格
+
+完整形式化规格超过 1,000 行，保留代码和英文注释，以便对照、验证和复用。请参阅[原文附录 B](https://stencil.so/blog/harness-playbook#appendix-b-elastic-speculative-slots)；本地完整译稿也收录了全部规格。本文正文与附录说明均为完整翻译。
+
+
+---
+此文自动发布于：<a href="https://github.com/coderPerseus/blog/issues/124" target="_blank">github issues</a>
