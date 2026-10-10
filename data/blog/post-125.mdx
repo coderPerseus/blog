@@ -62,18 +62,31 @@ Harness 是包在模型外面的那层东西：工具、权限、沙箱、上下
 ## 技术选型 & 最佳实践
 
 下面是我目前在 TS 全栈项目里的选择。每一层都写了为什么选它，以及什么情况下该换掉它。
+
 • **运行时**：Bun。启动和安装都快，这样 Agent 每一轮执行命令更快。它不算“无聊”的技术，但是真的很好用，推荐
+
 • **包管理**：pnpm workspace。快、省硬盘，前后端放在一个仓库里，Agent 能够看到项目全貌，避免上下文缺失
+
 • **工具链**：Vite+。一个 vp 命令管开发、检查、测试和构建（Vite+ Beta）。它还在 beta，求稳就分开装 Vite、Vitest、Oxlint 和 Oxfmt。
+
 • **类型检查**：TypeScript 7。Go 重写，完整构建通常快 8 到 12 倍。并且能够节省很大的内存占用
+
 • **前端**：Vite + React + TanStack Router / Query。启动快、概念少、路由类型安全。需要 SEO 和服务端渲染时，再换 Next.js 或 TanStack Start。
+
 • **UI**：Tailwind CSS + shadcn/ui。Agent 最熟，生成的界面最稳定。Ant Design 也是很好的选择。
+
 • **后端**：Hono + Zod。超快，超轻量，部署友好，而且可以开发各种自定义中间件。开发轻量后端首选，如果是生产级后端，fastify 是最佳选择
+
 • **数据库**：PostgreSQL + Drizzle。开发和单测用 PGlite，CI 用真实 PG，三处都是同一种数据库。小工具、单机部署推荐用 SQLite，部署 cloudflare 很方便
+
 • **测试**：Vitest + Playwright。单测快，端到端测试还能自动截图给人验收。
+
 几个小细节：
+
 • Oxfmt 还没到 1.0。格式化结果可能随版本变化，记得在 package.json 里锁死版本，不然每次升级都是一次全仓库的重新格式化。
+
 • Next.js 推荐基于 OpenNext。它目前依然是最好的框架之一，但是历史包袱太重。需要 SEO 就用
+
 • PGlite 是 WebAssembly 版的真 Postgres。npm install 就能在 Node 进程里跑，不需要 Docker，特别适合沙箱。它是单连接的，所以 CI 里还要跑一遍真实 PG 兜底。
 
 ## 常用工具的省内存平替
