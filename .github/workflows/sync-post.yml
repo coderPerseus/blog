@@ -10,11 +10,9 @@ on:
       - opened
       - closed
       - edited
-      - renamed
       - labeled
       - unlabeled
       - reopened
-      - committed # 修改？
   workflow_dispatch:
 
 # Avoid overlapping runs when multiple issue events happen in quick
@@ -63,10 +61,19 @@ jobs:
         run: |
           pnpm run sync-post
           git add .
-          git commit -m 'chore(ci): blog sync'
+          if git diff --staged --quiet; then
+            echo 'No blog content changes to commit.'
+          else
+            git commit -m 'chore(ci): blog sync'
+          fi
 
       - name: Pull latest changes from remote
         run: git pull --rebase origin main
 
       - name: Push changes to remote
         run: git push
+
+      - name: Trigger blog-astro sync and deploy
+        run: |
+          gh api --method POST repos/coderPerseus/blog-astro/dispatches \
+            -f event_type=blog-issues-updated
